@@ -3,10 +3,10 @@
 	desc = "A computer system running a deep neural network that processes arbitrary information to produce data useable in the development of new technologies. In layman's terms, it makes research points."
 	icon = 'icons/obj/machines/research.dmi'
 	icon_state = "RD-server-on"
-	var/datum/techweb/stored_research
+	base_icon_state = "RD-server"
 	var/heat_health = 100
 	//Code for point mining here.
-	var/working = TRUE			//temperature should break it.
+	var/working = TRUE //temperature should break it.
 	var/research_disabled = FALSE
 	var/server_id = 0
 	var/base_mining_income = 2
@@ -16,17 +16,13 @@
 	var/delay = 5
 	var/temp_tolerance_low = 0
 	var/temp_tolerance_high = T20C
-	var/temp_penalty_coefficient = 0.5	//1 = -1 points per degree above high tolerance. 0.5 = -0.5 points per degree above high tolerance.
+	var/temp_penalty_coefficient = 0.5 //1 = -1 points per degree above high tolerance. 0.5 = -0.5 points per degree above high tolerance.
 	req_access = list(ACCESS_RD) //ONLY THE R&D CAN CHANGE SERVER SETTINGS.
 
 /obj/machinery/rnd/server/Initialize()
 	. = ..()
 	name += " [num2hex(rand(1,65535), -1)]" //gives us a random four-digit hex number as part of the name. Y'know, for fluff.
 	SSresearch.servers |= src
-	stored_research = SSresearch.science_tech
-	var/obj/item/circuitboard/machine/B = new /obj/item/circuitboard/machine/rdserver(null)
-	B.apply_default_parts(src)
-	current_temp = get_env_temp()
 
 /obj/machinery/rnd/server/Destroy()
 	SSresearch.servers -= src
@@ -40,11 +36,10 @@
 
 /obj/machinery/rnd/server/update_icon_state()
 	if(machine_stat & EMPED || machine_stat & NOPOWER)
-		icon_state = "RD-server-off"
-	else if(research_disabled)
-		icon_state = "RD-server-halt"
-	else
-		icon_state = "RD-server-on"
+		icon_state = "[base_icon_state]-off"
+		return ..()
+	icon_state = "[base_icon_state]-[research_disabled ? "halt" : "on"]"
+	return ..()
 
 /obj/machinery/rnd/server/power_change()
 	. = ..()
@@ -56,35 +51,29 @@
 		working = FALSE
 	else
 		working = TRUE
-	update_icon()
+	update_appearance()
 
 /obj/machinery/rnd/server/emp_act()
 	. = ..()
 	if(. & EMP_PROTECT_SELF)
 		return
-	machine_stat |= EMPED
+	set_machine_stat(machine_stat | EMPED)
 	addtimer(CALLBACK(src, .proc/unemp), 600)
 	refresh_working()
 
 /obj/machinery/rnd/server/proc/unemp()
-	machine_stat &= ~EMPED
+	set_machine_stat(machine_stat & ~EMPED)
 	refresh_working()
 
 /obj/machinery/rnd/server/proc/toggle_disable()
 	research_disabled = !research_disabled
 	refresh_working()
 
-/obj/machinery/rnd/server/proc/mine()
-	. = base_mining_income
-	var/penalty = max((get_env_temp() - temp_tolerance_high), 0) * temp_penalty_coefficient
-	current_temp = get_env_temp()
-	. = max(. - penalty, 0)
-
 /obj/machinery/rnd/server/proc/get_env_temp()
-	var/turf/L = loc
+	var/turf/open/L = loc
 	if(isturf(L))
 		return L.temperature
-	return 0
+	return 0 //what
 
 /obj/machinery/rnd/server/proc/produce_heat(heat_amt)
 	if(!(machine_stat & (NOPOWER|BROKEN))) //Blatently stolen from space heater.
@@ -105,7 +94,7 @@
 					removed.temperature = min((removed.temperature*heat_capacity + heating_power)/heat_capacity, 1000)
 
 				env.merge(removed)
-				air_update_turf()
+				air_update_turf(FALSE, FALSE)
 
 /proc/fix_noid_research_servers()
 	var/list/no_id_servers = list()
@@ -186,7 +175,6 @@
 
 	var/datum/browser/popup = new(user, "server_com", src.name, 900, 620)
 	popup.set_content(dat.Join())
-	popup.set_title_image(user.browse_rsc_icon(src.icon, src.icon_state))
 	popup.open()
 
 /obj/machinery/computer/rdservercontrol/attackby(obj/item/D, mob/user, params)
@@ -196,6 +184,6 @@
 /obj/machinery/computer/rdservercontrol/emag_act(mob/user)
 	if(obj_flags & EMAGGED)
 		return
-	playsound(src, "sparks", 75, TRUE)
+	playsound(src, "sparks", 75, TRUE, SHORT_RANGE_SOUND_EXTRARANGE)
 	obj_flags |= EMAGGED
 	to_chat(user, "<span class='notice'>You disable the security protocols.</span>")

@@ -12,6 +12,7 @@
 	var/list/previous = list() //For temporary name/ui/ue/blood_type modifications
 	var/mob/living/holder
 	var/mutation_index[DNA_MUTATION_BLOCKS] //List of which mutations this carbon has and its assigned block
+	var/default_mutation_genes[DNA_MUTATION_BLOCKS] //List of the default genes from this mutation to allow DNA Scanner highlighting
 	var/stability = 100
 	var/scrambled = FALSE //Did we take something like mutagen? In that case we cant get our genes scanned to instantly cheese all the powers.
 
@@ -28,9 +29,9 @@
 
 	QDEL_NULL(species)
 
-	mutations.Cut()					//This only references mutations, just dereference.
-	temporary_mutations.Cut()		//^
-	previous.Cut()					//^
+	mutations.Cut() //This only references mutations, just dereference.
+	temporary_mutations.Cut() //^
+	previous.Cut() //^
 
 	return ..()
 
@@ -46,10 +47,12 @@
 	destination.dna.temporary_mutations = temporary_mutations.Copy()
 	if(transfer_SE)
 		destination.dna.mutation_index = mutation_index
+		destination.dna.default_mutation_genes = default_mutation_genes
 
 /datum/dna/proc/copy_dna(datum/dna/new_dna)
 	new_dna.unique_enzymes = unique_enzymes
 	new_dna.mutation_index = mutation_index
+	new_dna.default_mutation_genes = default_mutation_genes
 	new_dna.uni_identity = uni_identity
 	new_dna.blood_type = blood_type
 	new_dna.features = features.Copy()
@@ -117,21 +120,20 @@
 
 /datum/dna/proc/generate_dna_blocks()
 	var/bonus
-	if(species && species.inert_mutation)
+	if(species?.inert_mutation)
 		bonus = GET_INITIALIZED_MUTATION(species.inert_mutation)
 	var/list/mutations_temp = GLOB.good_mutations + GLOB.bad_mutations + GLOB.not_good_mutations + bonus
 	if(!LAZYLEN(mutations_temp))
 		return
 	mutation_index.Cut()
+	default_mutation_genes.Cut()
 	shuffle_inplace(mutations_temp)
-	if(ismonkey(holder))
-		mutations |= new RACEMUT(MUT_NORMAL)
-		mutation_index[RACEMUT] = GET_SEQUENCE(RACEMUT)
-	else
-		mutation_index[RACEMUT] = create_sequence(RACEMUT, FALSE)
+	mutation_index[RACEMUT] = create_sequence(RACEMUT, FALSE)
+	default_mutation_genes[RACEMUT] = mutation_index[RACEMUT]
 	for(var/i in 2 to DNA_MUTATION_BLOCKS)
 		var/datum/mutation/human/M = mutations_temp[i]
 		mutation_index[M.type] = create_sequence(M.type, FALSE, M.difficulty)
+		default_mutation_genes[M.type] = mutation_index[M.type]
 	shuffle_inplace(mutation_index)
 
 //Used to generate original gene sequences for every mutation
@@ -212,11 +214,17 @@
 		update_instability(FALSE)
 		return
 
-/datum/dna/proc/is_same_as(datum/dna/D)
-	if(uni_identity == D.uni_identity && mutation_index == D.mutation_index && real_name == D.real_name)
-		if(species.type == D.species.type && features == D.features && blood_type == D.blood_type)
-			return 1
-	return 0
+/**
+ * Checks if two DNAs are practically the same by comparing their most defining features
+ *
+ * Arguments:
+ * * target_dna The DNA that we are comparing to
+ */
+/datum/dna/proc/is_same_as(datum/dna/target_dna)
+	if(uni_identity == target_dna.uni_identity && mutation_index == target_dna.mutation_index && real_name == target_dna.real_name)
+		if(species.type == target_dna.species.type && compare_list(features, target_dna.features) && blood_type == target_dna.blood_type)
+			return TRUE
+	return FALSE
 
 /datum/dna/proc/update_instability(alert=TRUE)
 	stability = 100
@@ -325,7 +333,7 @@
 	return dna
 
 
-/mob/living/carbon/human/proc/hardset_dna(ui, list/mutation_index, newreal_name, newblood_type, datum/species/mrace, newfeatures, list/mutations, force_transfer_mutations)
+/mob/living/carbon/human/proc/hardset_dna(ui, list/mutation_index, list/default_mutation_genes, newreal_name, newblood_type, datum/species/mrace, newfeatures, list/mutations, force_transfer_mutations)
 //Do not use force_transfer_mutations for stuff like cloners without some precautions, otherwise some conditional mutations could break (timers, drill hat etc)
 	if(newfeatures)
 		dna.features = newfeatures
@@ -348,6 +356,10 @@
 
 	if(LAZYLEN(mutation_index))
 		dna.mutation_index = mutation_index.Copy()
+		if(LAZYLEN(default_mutation_genes))
+			dna.default_mutation_genes = default_mutation_genes.Copy()
+		else
+			dna.default_mutation_genes = mutation_index.Copy()
 		domutcheck()
 
 	if(mrace || newfeatures || ui)
@@ -360,7 +372,7 @@
 		for(var/M in mutations)
 			var/datum/mutation/human/HM = M
 			if(HM.allow_transfer || force_transfer_mutations)
-				dna.force_give(new HM.type(HM.class, copymut=HM)) //using force_give since it may include exotic mutations that otherwise wont be handled properly
+				dna.force_give(new HM.type(HM.class, copymut=HM)) //using force_give since it may include exotic mutations that otherwise won't be handled properly
 
 /mob/living/carbon/proc/create_dna()
 	dna = new /datum/dna(src)
@@ -391,7 +403,7 @@
 	facial_hairstyle = GLOB.facial_hairstyles_list[deconstruct_block(getblock(structure, DNA_FACIAL_HAIRSTYLE_BLOCK), GLOB.facial_hairstyles_list.len)]
 	hairstyle = GLOB.hairstyles_list[deconstruct_block(getblock(structure, DNA_HAIRSTYLE_BLOCK), GLOB.hairstyles_list.len)]
 	if(icon_update)
-		update_body()
+		dna.species.handle_body(src) // We want 'update_body_parts()' to be called only if mutcolor_update is TRUE, so no 'update_body()' here.
 		update_hair()
 		if(mutcolor_update)
 			update_body_parts()
@@ -407,8 +419,7 @@
 		return
 
 	for(var/mutation in dna.mutation_index)
-		if(ismob(dna.check_block(mutation)))
-			return //we got monkeyized/humanized, this mob will be deleted, no need to continue.
+		dna.check_block(mutation)
 
 	update_mutations_overlay()
 
@@ -428,7 +439,7 @@
 
 /datum/dna/proc/check_block_string(mutation)
 	if((LAZYLEN(mutation_index) > DNA_MUTATION_BLOCKS) || !(mutation in mutation_index))
-		return 0
+		return FALSE
 	return is_gene_active(mutation)
 
 /datum/dna/proc/is_gene_active(mutation)
@@ -440,8 +451,11 @@
 	. = TRUE
 	if(on)
 		mutation_index[HM.type] = GET_SEQUENCE(HM.type)
+		default_mutation_genes[HM.type] = mutation_index[HM.type]
 	else if(GET_SEQUENCE(HM.type) == mutation_index[HM.type])
 		mutation_index[HM.type] = create_sequence(HM.type, FALSE, HM.difficulty)
+		default_mutation_genes[HM.type] = mutation_index[HM.type]
+
 
 /datum/dna/proc/activate_mutation(mutation) //note that this returns a boolean and not a new mob
 	if(!mutation)
@@ -536,7 +550,7 @@
 
 /proc/scramble_dna(mob/living/carbon/M, ui=FALSE, se=FALSE, probability)
 	if(!M.has_dna())
-		return 0
+		return FALSE
 	if(se)
 		for(var/i=1, i<=DNA_MUTATION_BLOCKS, i++)
 			if(prob(probability))
@@ -547,7 +561,7 @@
 			if(prob(probability))
 				M.dna.uni_identity = setblock(M.dna.uni_identity, i, random_string(DNA_BLOCK_SIZE, GLOB.hex_characters))
 		M.updateappearance(mutations_overlay_update=1)
-	return 1
+	return TRUE
 
 //value in range 1 to values. values must be greater than 0
 //all arguments assumed to be positive integers
@@ -607,7 +621,7 @@
 				if(elligible_organs.len)
 					var/obj/item/organ/O = pick(elligible_organs)
 					O.Remove(src)
-					visible_message("<span class='danger'>[src] vomits up their [O.name]!</span>", "<span class='danger'>You vomit up your [O.name]</span>") //no "vomit up your the heart"
+					visible_message("<span class='danger'>[src] vomits up their [O.name]!</span>", "<span class='danger'>You vomit up your [O.name]</span>") //no "vomit up your heart"
 					O.forceMove(drop_location())
 					if(prob(20))
 						O.animate_atom_living()
@@ -639,8 +653,6 @@
 				set_species(/datum/species/skeleton)
 				if(prob(90))
 					addtimer(CALLBACK(src, .proc/death), 30)
-					if(mind)
-						mind.hasSoul = FALSE
 			if(5)
 				to_chat(src, "<span class='phobia'>LOOK UP!</span>")
 				addtimer(CALLBACK(src, .proc/something_horrible_mindmelt), 30)

@@ -1,6 +1,6 @@
 /datum/surgery/hepatectomy
 	name = "Hepatectomy"
-	target_mobtypes = list(/mob/living/carbon/human, /mob/living/carbon/monkey)
+	target_mobtypes = list(/mob/living/carbon/human)
 	possible_locs = list(BODY_ZONE_CHEST)
 	requires_real_bodypart = TRUE
 	steps = list(/datum/surgery_step/incise,
@@ -24,10 +24,9 @@
 	implements = list(TOOL_SCALPEL = 95, /obj/item/melee/transforming/energy/sword = 65, /obj/item/kitchen/knife = 45,
 		/obj/item/shard = 35)
 	time = 52
-	experience_given = (MEDICAL_SKILL_ORGAN_FIX*0.8) //repeatable so not as much xp
 
 /datum/surgery_step/hepatectomy/preop(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
-	display_results(user, target, "<span class='notice'>You begin to cut out a damaged peice of [target]'s liver...</span>",
+	display_results(user, target, "<span class='notice'>You begin to cut out a damaged piece of [target]'s liver...</span>",
 		"<span class='notice'>[user] begins to make an incision in [target].</span>",
 		"<span class='notice'>[user] begins to make an incision in [target].</span>")
 

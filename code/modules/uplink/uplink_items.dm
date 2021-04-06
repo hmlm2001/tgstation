@@ -1,6 +1,6 @@
 GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 
-/proc/get_uplink_items(var/datum/game_mode/gamemode = null, allow_sales = TRUE, allow_restricted = TRUE)
+/proc/get_uplink_items(datum/game_mode/gamemode = null, allow_sales = TRUE, allow_restricted = TRUE)
 	var/list/filtered_uplink_items = list()
 	var/list/sale_items = list()
 
@@ -30,8 +30,8 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			sale_items += I
 	if(allow_sales)
 		var/datum/team/nuclear/nuclear_team
-		if (gamemode == /datum/game_mode/nuclear) 					// uplink code kind of needs a redesign
-			nuclear_team = locate() in GLOB.antagonist_teams	// the team discounts could be a in a GLOB with this design but it would make sense for them to be team specific...
+		if (gamemode == /datum/game_mode/nuclear) // uplink code kind of needs a redesign
+			nuclear_team = locate() in GLOB.antagonist_teams // the team discounts could be in a GLOB with this design but it would make sense for them to be team specific...
 		if (!nuclear_team)
 			create_uplink_sales(3, "Discounted Gear", 1, sale_items, filtered_uplink_items)
 		else
@@ -111,6 +111,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 
 /datum/uplink_item/proc/purchase(mob/user, datum/component/uplink/U)
 	var/atom/A = spawn_item(item, user, U)
+	log_uplink("[key_name(user)] purchased [src] for [cost] telecrystals from [U.parent]'s uplink")
 	if(purchase_log_vis && U.purchase_log)
 		U.purchase_log.LogPurchase(A, src, cost)
 
@@ -135,20 +136,20 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	category = "Discounts"
 
 //All bundles and telecrystals
-/datum/uplink_item/bundles_TC
+/datum/uplink_item/bundles_tc
 	category = "Bundles"
 	surplus = 0
 	cant_discount = TRUE
 
-/datum/uplink_item/bundles_TC/chemical
+/datum/uplink_item/bundles_tc/chemical
 	name = "Bioterror bundle"
 	desc = "For the madman: Contains a handheld Bioterror chem sprayer, a Bioterror foam grenade, a box of lethal chemicals, a dart pistol, \
 			box of syringes, Donksoft assault rifle, and some riot darts. Remember: Seal suit and equip internals before use."
 	item = /obj/item/storage/backpack/duffelbag/syndie/med/bioterrorbundle
 	cost = 30 // normally 42
-	include_modes = list(/datum/game_mode/nuclear)
+	include_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
-/datum/uplink_item/bundles_TC/bulldog
+/datum/uplink_item/bundles_tc/bulldog
 	name = "Bulldog bundle"
 	desc = "Lean and mean: Optimized for people that want to get up close and personal. Contains the popular \
 			Bulldog shotgun, two 12g buckshot drums, and a pair of Thermal imaging goggles."
@@ -156,21 +157,21 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	cost = 13 // normally 16
 	include_modes = list(/datum/game_mode/nuclear)
 
-/datum/uplink_item/bundles_TC/c20r
+/datum/uplink_item/bundles_tc/c20r
 	name = "C-20r bundle"
 	desc = "Old Faithful: The classic C-20r, bundled with two magazines and a (surplus) suppressor at discount price."
 	item = /obj/item/storage/backpack/duffelbag/syndie/c20rbundle
 	cost = 14 // normally 16
 	include_modes = list(/datum/game_mode/nuclear)
 
-/datum/uplink_item/bundles_TC/cyber_implants
+/datum/uplink_item/bundles_tc/cyber_implants
 	name = "Cybernetic Implants Bundle"
 	desc = "A random selection of cybernetic implants. Guaranteed 5 high quality implants. Comes with an autosurgeon."
 	item = /obj/item/storage/box/cyber_implants
 	cost = 40
 	include_modes = list(/datum/game_mode/nuclear)
 
-/datum/uplink_item/bundles_TC/medical
+/datum/uplink_item/bundles_tc/medical
 	name = "Medical bundle"
 	desc = "The support specialist: Aid your fellow operatives with this medical bundle. Contains a tactical medkit, \
 			a Donksoft LMG, a box of riot darts and a pair of magboots to rescue your friends in no-gravity environments."
@@ -178,7 +179,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	cost = 15 // normally 20
 	include_modes = list(/datum/game_mode/nuclear)
 
-/datum/uplink_item/bundles_TC/sniper
+/datum/uplink_item/bundles_tc/sniper
 	name = "Sniper bundle"
 	desc = "Elegant and refined: Contains a collapsed sniper rifle in an expensive carrying case, \
 			two soporific knockout magazines, a free surplus suppressor, and a sharp-looking tactical turtleneck suit. \
@@ -187,16 +188,16 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	cost = 20 // normally 26
 	include_modes = list(/datum/game_mode/nuclear)
 
-/datum/uplink_item/bundles_TC/firestarter
+/datum/uplink_item/bundles_tc/firestarter
 	name = "Spetsnaz Pyro bundle"
 	desc = "For systematic suppression of carbon lifeforms in close quarters: Contains a lethal New Russian backpack spray, Elite hardsuit, \
-			Stechkin APS pistol, two magazines, a minibomb and a stimulant syringe. \
+			Stechkin APS machine pistol, two incendiary magazines, a minibomb and a stimulant syringe. \
 			Order NOW and comrade Boris will throw in an extra tracksuit."
 	item = /obj/item/storage/backpack/duffelbag/syndie/firestarter
 	cost = 30
 	include_modes = list(/datum/game_mode/nuclear)
 
-/datum/uplink_item/bundles_TC/contract_kit
+/datum/uplink_item/bundles_tc/contract_kit
 	name = "Contract Kit"
 	desc = "The Syndicate have offered you the chance to become a contractor, take on kidnapping contracts for TC and cash payouts. Upon purchase, \
 			you'll be granted your own contract uplink embedded within the supplied tablet computer. Additionally, you'll be granted \
@@ -207,24 +208,24 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	player_minimum = 20
 	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
-/datum/uplink_item/bundles_TC/bundle_A
+/datum/uplink_item/bundles_tc/bundle_a
 	name = "Syndi-kit Tactical"
 	desc = "Syndicate Bundles, also known as Syndi-Kits, are specialized groups of items that arrive in a plain box. \
 			These items are collectively worth more than 20 telecrystals, but you do not know which specialization \
 			you will receive. May contain discontinued and/or exotic items."
-	item = /obj/item/storage/box/syndicate/bundle_A
+	item = /obj/item/storage/box/syndicate/bundle_a
 	cost = 20
-	exclude_modes = list(/datum/game_mode/nuclear)
+	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
-/datum/uplink_item/bundles_TC/bundle_B
+/datum/uplink_item/bundles_tc/bundle_b
 	name = "Syndi-kit Special"
 	desc = "Syndicate Bundles, also known as Syndi-Kits, are specialized groups of items that arrive in a plain box. \
-			In Syndi-kit Special, you will recieve items used by famous syndicate agents of the past. Collectively worth more than 20 telecrystals, the syndicate loves a good throwback."
-	item = /obj/item/storage/box/syndicate/bundle_B
+			In Syndi-kit Special, you will receive items used by famous syndicate agents of the past. Collectively worth more than 20 telecrystals, the syndicate loves a good throwback."
+	item = /obj/item/storage/box/syndicate/bundle_b
 	cost = 20
-	exclude_modes = list(/datum/game_mode/nuclear)
+	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
-/datum/uplink_item/bundles_TC/surplus
+/datum/uplink_item/bundles_tc/surplus
 	name = "Syndicate Surplus Crate"
 	desc = "A dusty crate from the back of the Syndicate warehouse. Rumored to contain a valuable assortment of items, \
 			but you never know. Contents are sorted to always be worth 50 TC."
@@ -234,7 +235,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 	var/starting_crate_value = 50
 
-/datum/uplink_item/bundles_TC/surplus/super
+/datum/uplink_item/bundles_tc/surplus/super
 	name = "Super Surplus Crate"
 	desc = "A dusty SUPER-SIZED from the back of the Syndicate warehouse. Rumored to contain a valuable assortment of items, \
 			but you never know. Contents are sorted to always be worth 125 TC."
@@ -242,11 +243,12 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	player_minimum = 40
 	starting_crate_value = 125
 
-/datum/uplink_item/bundles_TC/surplus/purchase(mob/user, datum/component/uplink/U)
+/datum/uplink_item/bundles_tc/surplus/purchase(mob/user, datum/component/uplink/U)
 	var/list/uplink_items = get_uplink_items(SSticker && SSticker.mode? SSticker.mode : null, FALSE)
 
 	var/crate_value = starting_crate_value
 	var/obj/structure/closet/crate/C = spawn_item(/obj/structure/closet/crate, user, U)
+	log_uplink("[key_name(user)] puchased [src] worth [crate_value] telecrystals for [cost] telecrystals using [U.parent]'s uplink")
 	if(U.purchase_log)
 		U.purchase_log.LogPurchase(C, src, cost)
 	while(crate_value)
@@ -260,17 +262,18 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			continue
 		crate_value -= I.cost
 		var/obj/goods = new I.item(C)
+		log_uplink("- [key_name(user)] received [goods] from [src]")
 		if(U.purchase_log)
 			U.purchase_log.LogPurchase(goods, I, 0)
 	return C
 
-/datum/uplink_item/bundles_TC/random
+/datum/uplink_item/bundles_tc/random
 	name = "Random Item"
 	desc = "Picking this will purchase a random item. Useful if you have some TC to spare or if you haven't decided on a strategy yet."
 	item = /obj/effect/gibspawner/generic // non-tangible item because techwebs use this path to determine illegal tech
 	cost = 0
 
-/datum/uplink_item/bundles_TC/random/purchase(mob/user, datum/component/uplink/U)
+/datum/uplink_item/bundles_tc/random/purchase(mob/user, datum/component/uplink/U)
 	var/list/uplink_items = U.uplink_items
 	var/list/possible_items = list()
 	for(var/category in uplink_items)
@@ -286,10 +289,11 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 
 	if(possible_items.len)
 		var/datum/uplink_item/I = pick(possible_items)
+		log_uplink("[key_name(user)] purchased a random uplink item from [U.parent]'s uplink with [U.telecrystals] telecrystals remaining")
 		SSblackbox.record_feedback("tally", "traitor_random_uplink_items_gotten", 1, initial(I.name))
 		U.MakePurchase(user, I)
 
-/datum/uplink_item/bundles_TC/telecrystal
+/datum/uplink_item/bundles_tc/telecrystal
 	name = "1 Raw Telecrystal"
 	desc = "A telecrystal in its rawest and purest form; can be utilized on active uplinks to increase their telecrystal count."
 	item = /obj/item/stack/telecrystal
@@ -298,13 +302,13 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	// it's just used to buy more items (including itself!)
 	purchase_log_vis = FALSE
 
-/datum/uplink_item/bundles_TC/telecrystal/five
+/datum/uplink_item/bundles_tc/telecrystal/five
 	name = "5 Raw Telecrystals"
 	desc = "Five telecrystals in their rawest and purest form; can be utilized on active uplinks to increase their telecrystal count."
 	item = /obj/item/stack/telecrystal/five
 	cost = 5
 
-/datum/uplink_item/bundles_TC/telecrystal/twenty
+/datum/uplink_item/bundles_tc/telecrystal/twenty
 	name = "20 Raw Telecrystals"
 	desc = "Twenty telecrystals in their rawest and purest form; can be utilized on active uplinks to increase their telecrystal count."
 	item = /obj/item/stack/telecrystal/twenty
@@ -350,6 +354,22 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	surplus = 0
 	include_modes = list(/datum/game_mode/nuclear/clown_ops)
 
+/datum/uplink_item/dangerous/clownoppin
+	name = "Ultra Hilarious Firing Pin"
+	desc = "A firing pin that, when inserted into a gun, makes that gun only useable by clowns and clumsy people and makes that gun honk whenever anyone tries to fire it."
+	cost = 1 //much cheaper for clown ops than for clowns
+	item = /obj/item/firing_pin/clown/ultra
+	include_modes = list(/datum/game_mode/nuclear/clown_ops)
+	illegal_tech = FALSE
+
+/datum/uplink_item/dangerous/clownopsuperpin
+	name = "Super Ultra Hilarious Firing Pin"
+	desc = "Like the ultra hilarious firing pin, except the gun you insert this pin into explodes when someone who isn't clumsy or a clown tries to fire it."
+	cost = 4 //much cheaper for clown ops than for clowns
+	item = /obj/item/firing_pin/clown/ultra/selfdestruct
+	include_modes = list(/datum/game_mode/nuclear/clown_ops)
+	illegal_tech = FALSE
+
 /datum/uplink_item/dangerous/bioterror
 	name = "Biohazardous Chemical Sprayer"
 	desc = "A handheld chemical sprayer that allows a wide dispersal of selected chemicals. Especially tailored by the Tiger \
@@ -382,7 +402,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	desc = "A fully-loaded Scarborough Arms bullpup submachine gun. The C-20r fires .45 rounds with a \
 			24-round magazine and is compatible with suppressors."
 	item = /obj/item/gun/ballistic/automatic/c20r
-	cost = 10
+	cost = 13
 	surplus = 40
 	include_modes = list(/datum/game_mode/nuclear)
 
@@ -423,6 +443,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	cost = 4
 	surplus = 40
 	include_modes = list(/datum/game_mode/nuclear)
+	illegal_tech = FALSE
 
 /datum/uplink_item/dangerous/rapid
 	name = "Gloves of the North Star"
@@ -453,9 +474,9 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/dangerous/carbine
 	name = "M-90gl Carbine"
 	desc = "A fully-loaded, specialized three-round burst carbine that fires 5.56mm ammunition from a 30 round magazine \
-			with a toggleable 40mm underbarrel grenade launcher."
+			with a 40mm underbarrel grenade launcher. Use secondary-fire to fire the grenade launcher."
 	item = /obj/item/gun/ballistic/automatic/m90
-	cost = 18
+	cost = 14
 	surplus = 50
 	include_modes = list(/datum/game_mode/nuclear)
 
@@ -477,18 +498,27 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/dangerous/pistol
-	name = "Stechkin Pistol"
-	desc = "A small, easily concealable handgun that uses 10mm auto rounds in 8-round magazines and is compatible \
+	name = "Makarov Pistol"
+	desc = "A small, easily concealable handgun that uses 9mm auto rounds in 8-round magazines and is compatible \
 			with suppressors."
 	item = /obj/item/gun/ballistic/automatic/pistol
 	cost = 7
 	exclude_modes = list(/datum/game_mode/nuclear/clown_ops)
 
-/datum/uplink_item/dangerous/bolt_action
-	name = "Surplus Rifle"
-	desc = "A horribly outdated bolt action weapon. You've got to be desperate to use this."
-	item = /obj/item/gun/ballistic/rifle/boltaction
-	cost = 1
+/datum/uplink_item/dangerous/aps
+	name = "Stechkin APS Machine Pistol"
+	desc = "An ancient Soviet machine pistol, refurbished for the modern age. Uses 9mm auto rounds in 15-round magazines and is compatible \
+			with suppressors. The gun fires in three round bursts."
+	item = /obj/item/gun/ballistic/automatic/pistol/aps
+	cost = 10
+	include_modes = list(/datum/game_mode/nuclear)
+	exclude_modes = list(/datum/game_mode/nuclear/clown_ops)
+
+/datum/uplink_item/dangerous/surplus_smg
+	name = "Surplus SMG"
+	desc = "A horribly outdated automatic weapon. Why would you want to use this?"
+	item = /obj/item/gun/ballistic/automatic/plastikov
+	cost = 2
 	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/dangerous/revolver
@@ -520,7 +550,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	name = "Toy Pistol with Riot Darts"
 	desc = "An innocent-looking toy pistol designed to fire foam darts. Comes loaded with riot-grade \
 			darts effective at incapacitating a target."
-	item = /obj/item/gun/ballistic/automatic/toy/pistol/riot
+	item = /obj/item/gun/ballistic/automatic/pistol/toy/riot
 	cost = 2
 	surplus = 10
 
@@ -568,10 +598,11 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 
 /datum/uplink_item/stealthy_weapons/martialarts
 	name = "Martial Arts Scroll"
-	desc = "This scroll contains the secrets of an ancient martial arts technique. You will master unarmed combat, \
-			gain skin as hard as steel and swat bullets from the air, but you also refuse to use dishonorable ranged weaponry."
+	desc = "This scroll contains the secrets of an ancient martial arts technique. You will master unarmed combat \
+			and gain the ability to swat bullets from the air, but you will also refuse to use dishonorable ranged weaponry."
 	item = /obj/item/book/granter/martial/carp
-	cost = 17
+	player_minimum = 25
+	cost = 13
 	surplus = 0
 	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
@@ -587,7 +618,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	player_minimum = 25
 	cost = 10
 	surplus = 50
-	exclude_modes = list(/datum/game_mode/nuclear)
+	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
 /datum/uplink_item/stealthy_weapons/origami_kit
 	name = "Boxed Origami Kit"
@@ -622,11 +653,11 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			falls asleep, they will be able to move and act."
 	item = /obj/item/pen/sleepy
 	cost = 4
-	exclude_modes = list(/datum/game_mode/nuclear)
+	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
 /datum/uplink_item/stealthy_weapons/suppressor
 	name = "Suppressor"
-	desc = "This suppressor will silence the shots of the weapon it is attached to for increased stealth and superior ambushing capability. It is compatible with many small ballistic guns including the Stechkin and C-20r, but not revolvers or energy guns."
+	desc = "This suppressor will silence the shots of the weapon it is attached to for increased stealth and superior ambushing capability. It is compatible with many small ballistic guns including the Makarov, Stechkin APS and C-20r, but not revolvers or energy guns."
 	item = /obj/item/suppressor
 	cost = 3
 	surplus = 10
@@ -644,35 +675,43 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	surplus = 40
 
 /datum/uplink_item/ammo/pistol
-	name = "10mm Handgun Magazine"
-	desc = "An additional 8-round 10mm magazine; compatible with the Stechkin Pistol."
-	item = /obj/item/ammo_box/magazine/m10mm
+	name = "9mm Handgun Magazine"
+	desc = "An additional 8-round 9mm magazine, compatible with the Makarov pistol."
+	item = /obj/item/ammo_box/magazine/m9mm
 	cost = 1
 	exclude_modes = list(/datum/game_mode/nuclear/clown_ops)
+	illegal_tech = FALSE
 
 /datum/uplink_item/ammo/pistolap
-	name = "10mm Armour Piercing Magazine"
-	desc = "An additional 8-round 10mm magazine; compatible with the Stechkin Pistol. \
+	name = "9mm Armour Piercing Magazine"
+	desc = "An additional 8-round 9mm magazine, compatible with the Makarov pistol. \
 			These rounds are less effective at injuring the target but penetrate protective gear."
-	item = /obj/item/ammo_box/magazine/m10mm/ap
+	item = /obj/item/ammo_box/magazine/m9mm/ap
 	cost = 2
 	exclude_modes = list(/datum/game_mode/nuclear/clown_ops)
 
 /datum/uplink_item/ammo/pistolhp
-	name = "10mm Hollow Point Magazine"
-	desc = "An additional 8-round 10mm magazine; compatible with the Stechkin Pistol. \
+	name = "9mm Hollow Point Magazine"
+	desc = "An additional 8-round 9mm magazine, compatible with the Makarov pistol. \
 			These rounds are more damaging but ineffective against armour."
-	item = /obj/item/ammo_box/magazine/m10mm/hp
+	item = /obj/item/ammo_box/magazine/m9mm/hp
 	cost = 3
 	exclude_modes = list(/datum/game_mode/nuclear/clown_ops)
 
 /datum/uplink_item/ammo/pistolfire
-	name = "10mm Incendiary Magazine"
-	desc = "An additional 8-round 10mm magazine; compatible with the Stechkin Pistol. \
+	name = "9mm Incendiary Magazine"
+	desc = "An additional 8-round 9mm magazine, compatible with the Makarov pistol. \
 			Loaded with incendiary rounds which inflict little damage, but ignite the target."
-	item = /obj/item/ammo_box/magazine/m10mm/fire
+	item = /obj/item/ammo_box/magazine/m9mm/fire
 	cost = 2
 	exclude_modes = list(/datum/game_mode/nuclear/clown_ops)
+
+/datum/uplink_item/ammo/pistolaps
+	name = "9mm Stechkin APS Magazine"
+	desc = "An additional 15-round 9mm magazine, compatible with the Stechkin APS machine pistol."
+	item = /obj/item/ammo_box/magazine/m9mm_aps
+	cost = 2
+	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/ammo/shotgun
 	cost = 2
@@ -699,7 +738,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/ammo/shotgun/meteor
 	name = "12g Meteorslug Shells"
 	desc = "An alternative 8-round meteorslug magazine for use in the Bulldog shotgun. \
-            Great for blasting airlocks off their frames and knocking down enemies."
+		Great for blasting airlocks off their frames and knocking down enemies."
 	item = /obj/item/ammo_box/magazine/m12g/meteor
 	include_modes = list(/datum/game_mode/nuclear)
 
@@ -720,11 +759,11 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	illegal_tech = FALSE
 
 /datum/uplink_item/ammo/a40mm
-	name = "40mm Grenade"
-	desc = "A 40mm HE grenade for use with the M-90gl's under-barrel grenade launcher. \
+	name = "40mm Grenade Box"
+	desc = "A box of 40mm HE grenades for use with the M-90gl's under-barrel grenade launcher. \
 			Your teammates will ask you to not shoot these down small hallways."
-	item = /obj/item/ammo_casing/a40mm
-	cost = 2
+	item = /obj/item/ammo_box/a40mm
+	cost = 6
 	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/ammo/smg/bag
@@ -739,6 +778,22 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	desc = "An additional 24-round .45 magazine suitable for use with the C-20r submachine gun."
 	item = /obj/item/ammo_box/magazine/smgm45
 	cost = 3
+	include_modes = list(/datum/game_mode/nuclear)
+
+/datum/uplink_item/ammo/smgap
+	name = ".45 Armor Piercing SMG Magazine"
+	desc = "An additional 24-round .45 magazine suitable for use with the C-20r submachine gun.\
+			These rounds are less effective at injuring the target but penetrate protective gear."
+	item = /obj/item/ammo_box/magazine/smgm45/ap
+	cost = 5
+	include_modes = list(/datum/game_mode/nuclear)
+
+/datum/uplink_item/ammo/smgfire
+	name = ".45 Incendiary SMG Magazine"
+	desc = "An additional 24-round .45 magazine suitable for use with the C-20r submachine gun.\
+			Loaded with incendiary rounds which inflict little damage, but ignite the target."
+	item = /obj/item/ammo_box/magazine/smgm45/incen
+	cost = 4
 	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/ammo/sniper
@@ -766,9 +821,18 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/ammo/carbine
 	name = "5.56mm Toploader Magazine"
 	desc = "An additional 30-round 5.56mm magazine; suitable for use with the M-90gl carbine. \
-			These bullets pack less punch than 7.12x82mm rounds, but they still offer more power than .45 ammo."
+			These bullets pack less punch than 7.12x82mm rounds, but they still offer more power than .45 ammo due to their innate armour penetration."
 	item = /obj/item/ammo_box/magazine/m556
 	cost = 4
+	include_modes = list(/datum/game_mode/nuclear)
+
+/datum/uplink_item/ammo/carbinephase
+	name = "5.56mm Toploader Phasic Magazine"
+	desc = "An additional 30-round 5.56mm magazine; suitable for use with the M-90gl carbine. \
+			These bullets are made from an experimental alloy, 'Ghost Lead', that allows it to pass through almost any non-organic material. \
+			The name is a misnomer. It doesn't contain any lead whatsoever!"
+	item = /obj/item/ammo_box/magazine/m556/phasic
+	cost = 8
 	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/ammo/machinegun
@@ -801,6 +865,13 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			mixture that'll ignite anyone struck by the bullet. Some men just want to watch the world burn."
 	item = /obj/item/ammo_box/magazine/mm712x82/incen
 
+/datum/uplink_item/ammo/machinegun/match
+	name = "7.12x82mm (Match) Box Magazine"
+	desc = "A 50-round magazine of 7.12x82mm ammunition for use in the L6 SAW; you didn't know there was a demand for match grade \
+			precision bullet hose ammo, but these rounds are finely tuned and perfect for ricocheting off walls all fancy-like."
+	item = /obj/item/ammo_box/magazine/mm712x82/match
+	cost = 10
+
 /datum/uplink_item/ammo/rocket
 	include_modes = list(/datum/game_mode/nuclear)
 
@@ -816,13 +887,6 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			Strike fear into the hearts of your enemies."
 	item = /obj/item/ammo_casing/caseless/rocket/hedp
 	cost = 6
-
-/datum/uplink_item/ammo/pistolaps
-	name = "9mm Handgun Magazine"
-	desc = "An additional 15-round 9mm magazine, compatible with the Stechkin APS pistol, found in the Spetsnaz Pyro bundle."
-	item = /obj/item/ammo_box/magazine/pistolm9mm
-	cost = 2
-	include_modes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/ammo/toydarts
 	name = "Box of Riot Darts"
@@ -840,12 +904,13 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	cost = 6
 	include_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
-/datum/uplink_item/ammo/bolt_action
-	name = "Surplus Rifle Clip"
-	desc = "A stripper clip used to quickly load bolt action rifles. Contains 5 rounds."
-	item = 	/obj/item/ammo_box/a762
+/datum/uplink_item/ammo/surplus_smg
+	name = "Surplus SMG Magazine"
+	desc = "A cylindrical magazine designed for the PP-95 SMG."
+	item = /obj/item/ammo_box/magazine/plastikov9mm
 	cost = 1
 	include_modes = list(/datum/game_mode/nuclear)
+	illegal_tech = FALSE
 
 /datum/uplink_item/ammo/mech/bag
 	name = "Mech Support Kit Bag"
@@ -879,7 +944,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	name = "Bombanana"
 	desc = "A banana with an explosive taste! discard the peel quickly, as it will explode with the force of a Syndicate minibomb \
 		a few seconds after the banana is eaten."
-	item = /obj/item/reagent_containers/food/snacks/grown/banana/bombanana
+	item = /obj/item/food/grown/banana/bombanana
 	cost = 4 //it is a bit cheaper than a minibomb because you have to take off your helmet to eat it, which is how you arm it
 	surplus = 0
 	include_modes = list(/datum/game_mode/nuclear/clown_ops)
@@ -989,6 +1054,12 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/sbeacondrop/bomb
 	cost = 11
 
+/datum/uplink_item/explosives/syndicate_bomb/emp
+	name = "Syndicate EMP Bomb"
+	desc = "A variation of the syndicate bomb designed to produce a large EMP effect."
+	item = /obj/item/sbeacondrop/emp
+	cost = 7
+
 /datum/uplink_item/explosives/syndicate_detonator
 	name = "Syndicate Detonator"
 	desc = "The Syndicate detonator is a companion device to the Syndicate bomb. Simply press the included button \
@@ -1081,14 +1152,14 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/support/gygax
 	name = "Dark Gygax Exosuit"
 	desc = "A lightweight exosuit, painted in a dark scheme. Its speed and equipment selection make it excellent \
-			for hit-and-run style attacks. Features an incendiary carbine, flash bang launcher, teleporter, ion thrusters and a Tesla energy array."
-	item = /obj/mecha/combat/gygax/dark/loaded
+			for hit-and-run style attacks. Features a scattershot shotgun, armor boosters against melee and ranged attacks, ion thrusters and a Tesla energy array."
+	item = /obj/vehicle/sealed/mecha/combat/gygax/dark/loaded
 	cost = 80
 
 /datum/uplink_item/support/honker
 	name = "Dark H.O.N.K."
 	desc = "A clown combat mech equipped with bombanana peel and tearstache grenade launchers, as well as the ubiquitous HoNkER BlAsT 5000."
-	item = /obj/mecha/combat/honker/dark/loaded
+	item = /obj/vehicle/sealed/mecha/combat/honker/dark/loaded
 	cost = 80
 	include_modes = list(/datum/game_mode/nuclear/clown_ops)
 
@@ -1096,7 +1167,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	name = "Mauler Exosuit"
 	desc = "A massive and incredibly deadly military-grade exosuit. Features long-range targeting, thrust vectoring \
 			and deployable smoke. Comes equipped with an LMG, scattershot carbine, missile rack, an antiprojectile armor booster and a Tesla energy array."
-	item = /obj/mecha/combat/marauder/mauler/loaded
+	item = /obj/vehicle/sealed/mecha/combat/marauder/mauler/loaded
 	cost = 140
 
 // Stealth Items
@@ -1105,12 +1176,11 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 
 /datum/uplink_item/stealthy_tools/agent_card
 	name = "Agent Identification Card"
-	desc = "Agent cards prevent artificial intelligences from tracking the wearer, and can copy access \
-			from other identification cards. The access is cumulative, so scanning one card does not erase the \
-			access gained from another. In addition, they can be forged to display a new assignment and name. \
+	desc = "Agent cards prevent artificial intelligences from tracking the wearer, and hold up to 5 wildcards \
+			from other identification cards. In addition, they can be forged to display a new assignment, name and trim. \
 			This can be done an unlimited amount of times. Some Syndicate areas and devices can only be accessed \
 			with these cards."
-	item = /obj/item/card/id/syndicate
+	item = /obj/item/card/id/advanced/chameleon
 	cost = 2
 
 /datum/uplink_item/stealthy_tools/ai_detector
@@ -1125,10 +1195,10 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/stealthy_tools/chameleon
 	name = "Chameleon Kit"
 	desc = "A set of items that contain chameleon technology allowing you to disguise as pretty much anything on the station, and more! \
-			Due to budget cuts, the shoes don't provide protection against slipping."
+			Due to budget cuts, the shoes don't provide protection against slipping and skillchips are sold separately."
 	item = /obj/item/storage/box/syndie_kit/chameleon
 	cost = 2
-	exclude_modes = list(/datum/game_mode/nuclear)
+	exclude_modes = list(/datum/game_mode/nuclear) //clown ops are allowed to buy this kit, since it's basically a costume
 
 /datum/uplink_item/stealthy_tools/chameleon_proj
 	name = "Chameleon Projector"
@@ -1141,7 +1211,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	name = "Codespeak Manual"
 	desc = "Syndicate agents can be trained to use a series of codewords to convey complex information, which sounds like random concepts and drinks to anyone listening. \
 			This manual teaches you this Codespeak. You can also hit someone else with the manual in order to teach them. This is the deluxe edition, which has unlimited uses."
-	item = /obj/item/codespeak_manual/unlimited
+	item = /obj/item/language_manual/codespeak_manual/unlimited
 	cost = 3
 
 /datum/uplink_item/stealthy_tools/combatbananashoes
@@ -1200,11 +1270,22 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/storage/backpack/satchel/flat/with_tools
 	cost = 1
 	surplus = 30
+	illegal_tech = FALSE
 
 //Space Suits and Hardsuits
 /datum/uplink_item/suits
 	category = "Space Suits"
 	surplus = 40
+
+/datum/uplink_item/suits/infiltrator_bundle
+	name = "Infiltrator Case"
+	desc = "Developed by Roseus Galactic in conjunction with the Gorlex Marauders to produce a functional suit for urban operations, \
+			this suit proves to be cheaper than your standard issue hardsuit, with none of the movement restrictions of the outdated spacesuits employed by the company. \
+			Comes with an armor vest, helmet, sneaksuit, sneakboots, specialized combat gloves and a high-tech balaclava. The case is also rather useful as a storage container."
+	item = /obj/item/storage/toolbox/infiltrator
+	cost = 6
+	limited_stock = 1 //you only get one so you don't end up with too many gun cases
+	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 
 /datum/uplink_item/suits/space_suit
 	name = "Syndicate Space Suit"
@@ -1223,7 +1304,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			Nanotrasen crew who spot these suits are known to panic."
 	item = /obj/item/clothing/suit/space/hardsuit/syndi
 	cost = 8
-	exclude_modes = list(/datum/game_mode/nuclear) //you can't buy it in nuke, because the elite hardsuit costs the same while being better
+	exclude_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops) //you can't buy it in nuke, because the elite hardsuit costs the same while being better
 
 /datum/uplink_item/suits/hardsuit/elite
 	name = "Elite Syndicate Hardsuit"
@@ -1308,9 +1389,24 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/device_tools/emag
 	name = "Cryptographic Sequencer"
 	desc = "The cryptographic sequencer, electromagnetic card, or emag, is a small card that unlocks hidden functions \
-			in electronic devices, subverts intended functions, and easily breaks security mechanisms."
+			in electronic devices, subverts intended functions, and easily breaks security mechanisms. Cannot be used to open airlocks."
 	item = /obj/item/card/emag
-	cost = 6
+	cost = 4
+
+/datum/uplink_item/device_tools/syndie_jaws_of_life
+	name = "Syndicate Jaws of Life"
+	desc = "Based on a Nanotrasen model, this powerful tool can be used as both a crowbar and a pair of wirecutters. \
+	In its crowbar configuration, it can be used to force open airlocks. Very useful for entering the station or its departments."
+	item = /obj/item/crowbar/power/syndicate
+	cost = 4
+	include_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
+
+/datum/uplink_item/device_tools/doorjack
+	name = "Airlock Authentication Override Card"
+	desc = "A specialized cryptographic sequencer specifically designed to override station airlock access codes. \
+			After hacking a certain number of airlocks, the device will require some time to recharge."
+	item = /obj/item/card/emag/doorjack
+	cost = 3
 
 /datum/uplink_item/device_tools/fakenucleardisk
 	name = "Decoy Nuclear Authentication Disk"
@@ -1319,6 +1415,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/disk/nuclear/fake
 	cost = 1
 	surplus = 1
+	illegal_tech = FALSE
 
 /datum/uplink_item/device_tools/frame
 	name = "F.R.A.M.E. PDA Cartridge"
@@ -1355,12 +1452,13 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			multitool and combat gloves that are resistant to shocks and heat."
 	item = /obj/item/storage/toolbox/syndicate
 	cost = 1
+	illegal_tech = FALSE
 
 /datum/uplink_item/device_tools/hacked_module
 	name = "Hacked AI Law Upload Module"
 	desc = "When used with an upload console, this module allows you to upload priority laws to an artificial intelligence. \
 			Be careful with wording, as artificial intelligences may look for loopholes to exploit."
-	item = /obj/item/aiModule/syndicate
+	item = /obj/item/ai_module/syndicate
 	cost = 9
 
 /datum/uplink_item/device_tools/hypnotic_flash
@@ -1398,7 +1496,8 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			load on the grid, causing a station-wide blackout. The sink is large and cannot be stored in most \
 			traditional bags and boxes. Caution: Will explode if the powernet contains sufficient amounts of energy."
 	item = /obj/item/powersink
-	cost = 10
+	player_minimum = 25
+	cost = 11
 
 /datum/uplink_item/device_tools/rad_laser
 	name = "Radioactive Microlaser"
@@ -1433,6 +1532,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/soap/syndie
 	cost = 1
 	surplus = 50
+	illegal_tech = FALSE
 
 /datum/uplink_item/device_tools/surgerybag
 	name = "Syndicate Surgery Duffel Bag"
@@ -1477,7 +1577,6 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	include_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 	restricted = TRUE
 
-
 /datum/uplink_item/device_tools/suspiciousphone
 	name = "Protocol CRAB-17 Phone"
 	desc = "The Protocol CRAB-17 Phone, a phone borrowed from an unknown third party, it can be used to crash the space market, funneling the losses of the crew to your bank account.\
@@ -1493,24 +1592,17 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/clothing/gloves/tackler/combat/insulated
 	include_modes = list(/datum/game_mode/nuclear, /datum/game_mode/nuclear/clown_ops)
 	cost = 2
+	illegal_tech = FALSE
 
 // Implants
 /datum/uplink_item/implants
 	category = "Implants"
 	surplus = 50
 
-/datum/uplink_item/implants/adrenal
-	name = "Adrenal Implant"
-	desc = "An implant injected into the body, and later activated at the user's will. It will inject a chemical \
-			cocktail which lets you push yourself harder to get out of sticky situations. Avoid large doses if possible."
-	item = /obj/item/storage/box/syndie_kit/imp_adrenal
-	cost = 8
-	player_minimum = 25
-
 /datum/uplink_item/implants/antistun
 	name = "CNS Rebooter Implant"
 	desc = "This implant will help you get back up on your feet faster after being stunned. Comes with an autosurgeon."
-	item = /obj/item/autosurgeon/syndicate/anti_stun
+	item = /obj/item/autosurgeon/organ/syndicate/anti_stun
 	cost = 12
 	surplus = 0
 	include_modes = list(/datum/game_mode/nuclear)
@@ -1551,7 +1643,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/implants/reviver
 	name = "Reviver Implant"
 	desc = "This implant will attempt to revive and heal you if you lose consciousness. Comes with an autosurgeon."
-	item = /obj/item/autosurgeon/syndicate/reviver
+	item = /obj/item/autosurgeon/organ/syndicate/reviver
 	cost = 8
 	surplus = 0
 	include_modes = list(/datum/game_mode/nuclear)
@@ -1573,7 +1665,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/implants/thermals
 	name = "Thermal Eyes"
 	desc = "These cybernetic eyes will give you thermal vision. Comes with a free autosurgeon."
-	item = /obj/item/autosurgeon/syndicate/thermal_eyes
+	item = /obj/item/autosurgeon/organ/syndicate/thermal_eyes
 	cost = 8
 	surplus = 0
 	include_modes = list(/datum/game_mode/nuclear)
@@ -1583,7 +1675,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	desc = "An implant injected into the body, and later activated at the user's will. Has no telecrystals and must be charged by the use of physical telecrystals. \
 			Undetectable (except via surgery), and excellent for escaping confinement."
 	item = /obj/item/storage/box/syndie_kit/imp_uplink
-	cost = 4
+	cost = UPLINK_IMPLANT_TELECRYSTAL_COST
 	// An empty uplink is kinda useless.
 	surplus = 0
 	restricted = TRUE
@@ -1591,8 +1683,19 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 /datum/uplink_item/implants/xray
 	name = "X-ray Vision Implant"
 	desc = "These cybernetic eyes will give you X-ray vision. Comes with an autosurgeon."
-	item = /obj/item/autosurgeon/syndicate/xray_eyes
+	item = /obj/item/autosurgeon/organ/syndicate/xray_eyes
 	cost = 10
+	surplus = 0
+	include_modes = list(/datum/game_mode/nuclear)
+
+/datum/uplink_item/implants/deathrattle
+	name = "Box of Deathrattle Implants"
+	desc = "A collection of implants (and one reusable implanter) that should be injected into the team. When one of the team \
+	dies, all other implant holders recieve a mental message informing them of their teammates' name \
+	and the location of their death. Unlike most implants, these are designed to be implanted \
+	in any creature, biological or mechanical."
+	item = /obj/item/storage/box/syndie_kit/imp_deathrattle
+	cost = 4
 	surplus = 0
 	include_modes = list(/datum/game_mode/nuclear)
 
@@ -1619,8 +1722,8 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 
 /datum/uplink_item/role_restricted/ancient_jumpsuit
 	name = "Ancient Jumpsuit"
-	desc = "A tattered old jumpsuit that will provide absolutely no benefit to you. It fills the wearer with a strange compulsion to blurt out 'glorf'."
-	item = /obj/item/clothing/under/color/grey/glorf
+	desc = "A tattered old jumpsuit that will provide absolutely no benefit to you."
+	item = /obj/item/clothing/under/color/grey/ancient
 	cost = 20
 	restricted_roles = list("Assistant")
 	surplus = 0
@@ -1646,9 +1749,9 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	desc = "A highly specialized weapon, the Blast Cannon is actually relatively simple. It contains an attachment for a tank transfer valve mounted to an angled pipe specially constructed \
 			withstand extreme pressure and temperatures, and has a mechanical trigger for triggering the transfer valve. Essentially, it turns the explosive force of a bomb into a narrow-angle \
 			blast wave \"projectile\". Aspiring scientists may find this highly useful, as forcing the pressure shockwave into a narrow angle seems to be able to bypass whatever quirk of physics \
-			disallows explosive ranges above a certain distance, allowing for the device to use the theoretical yield of a transfer valve bomb, instead of the factual yield."
+			disallows explosive ranges above a certain distance, allowing for the device to use the theoretical yield of a transfer valve bomb, instead of the factual yield. It's simple design makes it easy to conceal."
 	item = /obj/item/gun/blastcannon
-	cost = 14							//High cost because of the potential for extreme damage in the hands of a skilled scientist.
+	cost = 14 //High cost because of the potential for extreme damage in the hands of a skilled scientist.
 	restricted_roles = list("Research Director", "Scientist")
 
 /datum/uplink_item/role_restricted/gorillacubes
@@ -1657,7 +1760,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			Caution: Product may rehydrate when exposed to water."
 	item = /obj/item/storage/box/gorillacubes
 	cost = 6
-	restricted_roles = list("Geneticist", "Chief Medical Officer")
+	restricted_roles = list("Geneticist", "Research Director")
 
 /datum/uplink_item/role_restricted/brainwash_disk
 	name = "Brainwashing Surgery Program"
@@ -1678,6 +1781,13 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	cost = 15
 	restricted_roles = list("Clown")
 
+/datum/uplink_item/role_restricted/clumsinessinjector //clown ops can buy this too, but it's in the pointless badassery section for them
+	name = "Clumsiness Injector"
+	desc = "Inject yourself with this to become as clumsy as a clown... or inject someone ELSE with it to make THEM as clumsy as a clown. Useful for clowns who wish to reconnect with their former clownish nature or for clowns who wish to torment and play with their prey before killing them."
+	item = /obj/item/dnainjector/clumsymut
+	cost = 1
+	restricted_roles = list("Clown")
+	illegal_tech = FALSE
 
 /datum/uplink_item/role_restricted/spider_injector
 	name = "Australicus Slime Mutator"
@@ -1772,21 +1882,21 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 			Side-affects may include hypertrichosis, violent outbursts, and an unending affinity for bananas."
 	item = /obj/item/reagent_containers/hypospray/medipen/magillitis
 	cost = 15
-	restricted_roles = list("Geneticist", "Chief Medical Officer")
+	restricted_roles = list("Geneticist", "Research Director")
 
 /datum/uplink_item/role_restricted/modified_syringe_gun
 	name = "Modified Syringe Gun"
 	desc = "A syringe gun that fires DNA injectors instead of normal syringes."
 	item = /obj/item/gun/syringe/dna
 	cost = 14
-	restricted_roles = list("Geneticist", "Chief Medical Officer")
+	restricted_roles = list("Geneticist", "Research Director")
 
 /datum/uplink_item/role_restricted/chemical_gun
 	name = "Reagent Dartgun"
 	desc = "A heavily modified syringe gun which is capable of synthesizing its own chemical darts using input reagents. Can hold 100u of reagents."
 	item = /obj/item/gun/chem
 	cost = 12
-	restricted_roles = list("Chemist", "Chief Medical Officer")
+	restricted_roles = list("Chemist", "Chief Medical Officer", "Botanist")
 
 /datum/uplink_item/role_restricted/reverse_bear_trap
 	name = "Reverse Bear Trap"
@@ -1805,13 +1915,50 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/storage/box/hug/reverse_revolver
 	restricted_roles = list("Clown")
 
+/datum/uplink_item/role_restricted/clownpin
+	name = "Ultra Hilarious Firing Pin"
+	desc = "A firing pin that, when inserted into a gun, makes that gun only usable by clowns and clumsy people and makes that gun honk whenever anyone tries to fire it."
+	cost = 4
+	item = /obj/item/firing_pin/clown/ultra
+	restricted_roles = list("Clown")
+	illegal_tech = FALSE
+
+/datum/uplink_item/role_restricted/clownsuperpin
+	name = "Super Ultra Hilarious Firing Pin"
+	desc = "Like the ultra hilarious firing pin, except the gun you insert this pin into explodes when someone who isn't clumsy or a clown tries to fire it."
+	cost = 7
+	item = /obj/item/firing_pin/clown/ultra/selfdestruct
+	restricted_roles = list("Clown")
+	illegal_tech = FALSE
+
 /datum/uplink_item/role_restricted/laser_arm
 	name = "Laser Arm Implant"
 	desc = "An implant that grants you a recharging laser gun inside your arm. Weak to EMPs. Comes with a syndicate autosurgeon for immediate self-application."
 	cost = 10
-	item = /obj/item/autosurgeon/syndicate/laser_arm
-	restricted_roles = list("Roboticist")
+	item = /obj/item/autosurgeon/organ/syndicate/laser_arm
+	restricted_roles = list("Roboticist", "Research Director")
 
+/datum/uplink_item/role_restricted/ocd_device
+	name = "Organic Resources Disturbance Inducer"
+	desc = "A device that raises hell in organic resources indirectly. Single use."
+	cost = 2
+	limited_stock = 1
+	item = /obj/item/devices/ocd_device
+	restricted_roles = list("Head of Personnel", "Quartermaster")
+
+/datum/uplink_item/role_restricted/meathook
+	name = "Butcher's Meat Hook"
+	desc = "A brutal cleaver on a long chain, it allows you to pull people to your location."
+	item = /obj/item/gun/magic/hook
+	cost = 11
+	restricted_roles = list("Cook")
+
+/datum/uplink_item/role_restricted/turretbox
+	name = "Disposable Sentry Gun"
+	desc = "A disposable sentry gun deployment system cleverly disguised as a toolbox, apply wrench for functionality."
+	item = /obj/item/storage/toolbox/emergency/turret
+	cost = 11
+	restricted_roles = list("Station Engineer")
 
 // Pointless
 /datum/uplink_item/badass
@@ -1841,6 +1988,14 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	desc = "Nothing is more terrifying than clowns with fully automatic weaponry."
 	item = /obj/item/storage/backpack/duffelbag/clown/syndie
 
+/datum/uplink_item/badass/costumes/tactical_naptime
+	name = "Sleepy Time Pajama Bundle"
+	desc = "Even soldiers need to get a good nights rest. Comes with blood-red pajamas, a blankie, a hot mug of cocoa and a fuzzy friend."
+	item = /obj/item/storage/box/syndie_kit/sleepytime
+	cost = 4
+	limited_stock = 1
+	cant_discount = TRUE
+
 /datum/uplink_item/badass/balloon
 	name = "Syndicate Balloon"
 	desc = "For showing that you are THE BOSS: A useless red balloon with the Syndicate logo on it. \
@@ -1858,6 +2013,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/storage/secure/briefcase/syndie
 	cost = 1
 	restricted = TRUE
+	illegal_tech = FALSE
 
 /datum/uplink_item/badass/syndiecards
 	name = "Syndicate Playing Cards"
@@ -1867,6 +2023,7 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/toy/cards/deck/syndicate
 	cost = 1
 	surplus = 40
+	illegal_tech = FALSE
 
 /datum/uplink_item/badass/syndiecigs
 	name = "Syndicate Smokes"
@@ -1874,3 +2031,12 @@ GLOBAL_LIST_INIT(uplink_items, subtypesof(/datum/uplink_item))
 	item = /obj/item/storage/fancy/cigarettes/cigpack_syndicate
 	cost = 2
 	illegal_tech = FALSE
+
+/datum/uplink_item/badass/clownopclumsinessinjector //clowns can buy this too, but it's in the role-restricted items section for them
+	name = "Clumsiness Injector"
+	desc = "Inject yourself with this to become as clumsy as a clown... or inject someone ELSE with it to make THEM as clumsy as a clown. Useful for clown operatives who wish to reconnect with their former clownish nature or for clown operatives who wish to torment and play with their prey before killing them."
+	item = /obj/item/dnainjector/clumsymut
+	cost = 1
+	include_modes = list(/datum/game_mode/nuclear/clown_ops)
+	illegal_tech = FALSE
+

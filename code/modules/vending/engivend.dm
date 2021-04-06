@@ -20,9 +20,10 @@
 					/obj/item/construction/rcd/loaded = 2,
 					/obj/item/storage/box/smart_metal_foam = 1)
 	refill_canister = /obj/item/vending_refill/engivend
-	default_price = 450
-	extra_price = 500
+	default_price = PAYCHECK_EASY
+	extra_price = PAYCHECK_COMMAND * 1.5
 	payment_department = ACCOUNT_ENG
+	light_mask = "engivend-light-mask"
 
 /obj/item/vending_refill/engivend
 	machine_name = "Engi-Vend"

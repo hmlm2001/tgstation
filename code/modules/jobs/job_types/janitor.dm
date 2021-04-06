@@ -1,8 +1,6 @@
 /datum/job/janitor
 	title = "Janitor"
-	flag = JANITOR
 	department_head = list("Head of Personnel")
-	department_flag = CIVILIAN
 	faction = "Station"
 	total_positions = 2
 	spawn_positions = 1
@@ -10,13 +8,15 @@
 	selection_color = "#bbe291"
 
 	outfit = /datum/outfit/job/janitor
+	plasmaman_outfit = /datum/outfit/plasmaman/janitor
 
-	access = list(ACCESS_JANITOR, ACCESS_MAINT_TUNNELS, ACCESS_MINERAL_STOREROOM)
-	minimal_access = list(ACCESS_JANITOR, ACCESS_MAINT_TUNNELS, ACCESS_MINERAL_STOREROOM)
 	paycheck = PAYCHECK_EASY
 	paycheck_department = ACCOUNT_SRV
 
 	display_order = JOB_DISPLAY_ORDER_JANITOR
+	departments = DEPARTMENT_SERVICE
+
+	family_heirlooms = list(/obj/item/mop, /obj/item/clothing/suit/caution, /obj/item/reagent_containers/glass/bucket, /obj/item/paper/fluff/stations/soap)
 
 /datum/outfit/job/janitor
 	name = "Janitor"
@@ -27,8 +27,10 @@
 	uniform = /obj/item/clothing/under/rank/civilian/janitor
 	backpack_contents = list(/obj/item/modular_computer/tablet/preset/advanced=1)
 
+	id_trim = /datum/id_trim/job/janitor
+
 /datum/outfit/job/janitor/pre_equip(mob/living/carbon/human/H, visualsOnly)
 	. = ..()
 	if(GARBAGEDAY in SSevents.holidays)
-		l_pocket = /obj/item/gun/ballistic/revolver
+		backpack_contents += /obj/item/gun/ballistic/revolver
 		r_pocket = /obj/item/ammo_box/a357

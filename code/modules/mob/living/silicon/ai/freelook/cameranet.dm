@@ -31,10 +31,10 @@ GLOBAL_DATUM_INIT(cameranet, /datum/cameranet, new)
 	vis_contents_transparent = new /obj/effect/overlay/camera_static/transparent()
 	vis_contents_objects = list(vis_contents_opaque, vis_contents_transparent)
 
-	obscured = new('icons/effects/cameravis.dmi', vis_contents_opaque, null, CAMERA_STATIC_LAYER)
+	obscured = new('icons/effects/cameravis.dmi', vis_contents_opaque, null)
 	obscured.plane = CAMERA_STATIC_PLANE
 
-	obscured_transparent = new('icons/effects/cameravis.dmi', vis_contents_transparent, null, CAMERA_STATIC_LAYER)
+	obscured_transparent = new('icons/effects/cameravis.dmi', vis_contents_transparent, null)
 	obscured_transparent.plane = CAMERA_STATIC_PLANE
 
 // Checks if a chunk has been Generated in x, y, z.
@@ -71,7 +71,7 @@ GLOBAL_DATUM_INIT(cameranet, /datum/cameranet, new)
 				C.images += obscured
 
 	for(var/V in moved_eyes)
-		var/mob/camera/aiEye/eye = V
+		var/mob/camera/ai_eye/eye = V
 		var/list/visibleChunks = list()
 		if(eye.loc)
 			// 0xf = 15
@@ -106,7 +106,7 @@ GLOBAL_DATUM_INIT(cameranet, /datum/cameranet, new)
 					if(USE_STATIC_OPAQUE)
 						client.images -= GLOB.cameranet.obscured
 
-// Updates the chunks that the turf is located in. Use this when obstacles are destroyed or	when doors open.
+// Updates the chunks that the turf is located in. Use this when obstacles are destroyed or when doors open.
 
 /datum/cameranet/proc/updateVisibility(atom/A, opacity_check = 1)
 	if(!SSticker || (opacity_check && !A.opacity))
@@ -172,19 +172,13 @@ GLOBAL_DATUM_INIT(cameranet, /datum/cameranet, new)
 
 
 /datum/cameranet/proc/checkTurfVis(turf/position)
-	var/datum/camerachunk/chunk = chunkGenerated(position.x, position.y, position.z)
+	var/datum/camerachunk/chunk = getCameraChunk(position.x, position.y, position.z)
 	if(chunk)
 		if(chunk.changed)
 			chunk.hasChanged(1) // Update now, no matter if it's visible or not.
 		if(chunk.visibleTurfs[position])
 			return 1
 	return 0
-
-/datum/cameranet/proc/stat_entry()
-	if(!statclick)
-		statclick = new/obj/effect/statclick/debug(null, "Initializing...", src)
-
-	stat(name, statclick.update("Cameras: [GLOB.cameranet.cameras.len] | Chunks: [GLOB.cameranet.chunks.len]"))
 
 /obj/effect/overlay/camera_static
 	name = "static"
@@ -197,7 +191,6 @@ GLOBAL_DATUM_INIT(cameranet, /datum/cameranet, new)
 	mouse_opacity = MOUSE_OPACITY_ICON
 	invisibility = INVISIBILITY_ABSTRACT
 
-	layer = CAMERA_STATIC_LAYER
 	plane = CAMERA_STATIC_PLANE
 
 /obj/effect/overlay/camera_static/transparent

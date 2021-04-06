@@ -21,10 +21,10 @@
 	var/list/obj/projectile/staging
 	use_host_turf = TRUE
 
-/datum/proximity_monitor/advanced/peaceborg_dampener/New()
+/datum/proximity_monitor/advanced/peaceborg_dampener/New(atom/_host, range, _ignore_if_not_on_turf = TRUE)
 	tracked = list()
 	staging = list()
-	..()
+	return ..()
 
 /datum/proximity_monitor/advanced/peaceborg_dampener/Destroy()
 	return ..()
@@ -41,7 +41,7 @@
 	for(var/mob/living/silicon/robot/R in range(current_range, get_turf(host)))
 		if(R.has_buckled_mobs())
 			for(var/mob/living/L in R.buckled_mobs)
-				L.visible_message("<span class='warning'>[L] is knocked off of [R] by the charge in [R]'s chassis induced by [name]!</span>")	//I know it's bad.
+				L.visible_message("<span class='warning'>[L] is knocked off of [R] by the charge in [R]'s chassis induced by [name]!</span>") //I know it's bad.
 				L.Paralyze(10)
 				R.unbuckle_mob(L)
 				do_sparks(5, 0, L)
@@ -111,4 +111,4 @@
 		staging[AM] = get_turf(AM)
 	. = ..()
 	if(!.)
-		staging -= AM	//This one ain't goin' through.
+		staging -= AM //This one ain't goin' through.

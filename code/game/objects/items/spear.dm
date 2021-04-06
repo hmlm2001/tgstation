@@ -10,25 +10,30 @@
 	slot_flags = ITEM_SLOT_BACK
 	throwforce = 20
 	throw_speed = 4
-	embedding = list("impact_pain_mult" = 3)
+	embedding = list("impact_pain_mult" = 2, "remove_pain_mult" = 4, "jostle_chance" = 2.5)
 	armour_penetration = 10
 	custom_materials = list(/datum/material/iron=1150, /datum/material/glass=2075)
 	hitsound = 'sound/weapons/bladeslice.ogg'
-	attack_verb = list("attacked", "poked", "jabbed", "torn", "gored")
-	sharpness = IS_SHARP
+	attack_verb_continuous = list("attacks", "pokes", "jabs", "tears", "lacerates", "gores")
+	attack_verb_simple = list("attack", "poke", "jab", "tear", "lacerate", "gore")
+	sharpness = SHARP_EDGED // i know the whole point of spears is that they're pointy, but edged is more devastating at the moment so
 	max_integrity = 200
-	armor = list("melee" = 0, "bullet" = 0, "laser" = 0, "energy" = 0, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 50, "acid" = 30)
+	armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, BIO = 0, RAD = 0, FIRE = 50, ACID = 30)
 	var/war_cry = "AAAAARGH!!!"
 	var/icon_prefix = "spearglass"
+	wound_bonus = -15
+	bare_wound_bonus = 15
 
 /obj/item/spear/ComponentInitialize()
 	. = ..()
 	AddComponent(/datum/component/butchering, 100, 70) //decent in a pinch, but pretty bad.
 	AddComponent(/datum/component/jousting)
 	AddComponent(/datum/component/two_handed, force_unwielded=10, force_wielded=18, icon_wielded="[icon_prefix]1")
+	update_appearance()
 
 /obj/item/spear/update_icon_state()
 	icon_state = "[icon_prefix]0"
+	return ..()
 
 /obj/item/spear/suicide_act(mob/living/carbon/user)
 	user.visible_message("<span class='suicide'>[user] begins to sword-swallow \the [src]! It looks like [user.p_theyre()] trying to commit suicide!</span>")
@@ -36,16 +41,21 @@
 
 /obj/item/spear/CheckParts(list/parts_list)
 	var/obj/item/shard/tip = locate() in parts_list
-	if (istype(tip, /obj/item/shard/plasma))
-		throwforce = 21
-		icon_prefix = "spearplasma"
-		AddComponent(/datum/component/two_handed, force_unwielded=11, force_wielded=19, icon_wielded="[icon_prefix]1")
-	update_icon()
-	qdel(tip)
-	..()
+	if(tip)
+		if (istype(tip, /obj/item/shard/plasma))
+			throwforce = 21
+			icon_prefix = "spearplasma"
+			AddComponent(/datum/component/two_handed, force_unwielded=11, force_wielded=19, icon_wielded="[icon_prefix]1")
+		update_appearance()
+		parts_list -= tip
+		qdel(tip)
+	return ..()
 
 /obj/item/spear/explosive
 	name = "explosive lance"
+	icon_state = "spearbomb0"
+	base_icon_state = "spearbomb"
+	icon_prefix = "spearbomb"
 	var/obj/item/grenade/explosive = null
 	var/wielded = FALSE // track wielded status on item
 
@@ -53,22 +63,23 @@
 	. = ..()
 	RegisterSignal(src, COMSIG_TWOHANDED_WIELD, .proc/on_wield)
 	RegisterSignal(src, COMSIG_TWOHANDED_UNWIELD, .proc/on_unwield)
-	set_explosive(new /obj/item/grenade/iedcasing()) //For admin-spawned explosive lances
+	set_explosive(new /obj/item/grenade/iedcasing/spawned()) //For admin-spawned explosive lances
 
 /obj/item/spear/explosive/ComponentInitialize()
 	. = ..()
-	AddComponent(/datum/component/two_handed, force_unwielded=10, force_wielded=18, icon_wielded="spearbomb1")
+	AddComponent(/datum/component/two_handed, force_unwielded=10, force_wielded=18, icon_wielded="[icon_prefix]1")
 
 /// triggered on wield of two handed item
 /obj/item/spear/explosive/proc/on_wield(obj/item/source, mob/user)
+	SIGNAL_HANDLER
+
 	wielded = TRUE
 
 /// triggered on unwield of two handed item
 /obj/item/spear/explosive/proc/on_unwield(obj/item/source, mob/user)
-	wielded = FALSE
+	SIGNAL_HANDLER
 
-/obj/item/spear/explosive/update_icon_state()
-	icon_state = "spearbomb0"
+	wielded = FALSE
 
 /obj/item/spear/explosive/proc/set_explosive(obj/item/grenade/G)
 	if(explosive)
@@ -98,7 +109,7 @@
 	user.visible_message("<span class='suicide'>[user] begins to sword-swallow \the [src]! It looks like [user.p_theyre()] trying to commit suicide!</span>")
 	user.say("[war_cry]", forced="spear warcry")
 	explosive.forceMove(user)
-	explosive.prime()
+	explosive.detonate()
 	user.gib()
 	qdel(src)
 	return BRUTELOSS
@@ -122,14 +133,15 @@
 	if(wielded)
 		user.say("[war_cry]", forced="spear warcry")
 		explosive.forceMove(AM)
-		explosive.prime()
+		explosive.detonate(lanced_by=user)
 		qdel(src)
 
 //GREY TIDE
 /obj/item/spear/grey_tide
 	name = "\improper Grey Tide"
 	desc = "Recovered from the aftermath of a revolt aboard Defense Outpost Theta Aegis, in which a seemingly endless tide of Assistants caused heavy casualities among Nanotrasen military forces."
-	attack_verb = list("gored")
+	attack_verb_continuous = list("gores")
+	attack_verb_simple = list("gore")
 	force=15
 
 /obj/item/spear/grey_tide/ComponentInitialize()
@@ -154,17 +166,16 @@
 /*
  * Bone Spear
  */
-/obj/item/spear/bonespear	//Blatant imitation of spear, but made out of bone. Not valid for explosive modification.
+/obj/item/spear/bonespear //Blatant imitation of spear, but made out of bone. Not valid for explosive modification.
 	icon_state = "bone_spear0"
+	base_icon_state = "bone_spear0"
+	icon_prefix = "bone_spear"
 	name = "bone spear"
 	desc = "A haphazardly-constructed yet still deadly weapon. The pinnacle of modern technology."
 	force = 12
 	throwforce = 22
-	armour_penetration = 15				//Enhanced armor piercing
+	armour_penetration = 15 //Enhanced armor piercing
 
 /obj/item/spear/bonespear/ComponentInitialize()
 	. = ..()
-	AddComponent(/datum/component/two_handed, force_unwielded=12, force_wielded=20, icon_wielded="bone_spear1")
-
-/obj/item/spear/bonespear/update_icon_state()
-	icon_state = "bone_spear0"
+	AddComponent(/datum/component/two_handed, force_unwielded=12, force_wielded=20, icon_wielded="[icon_prefix]1")

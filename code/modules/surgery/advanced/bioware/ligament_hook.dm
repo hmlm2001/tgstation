@@ -16,7 +16,6 @@
 	name = "reshape ligaments"
 	accept_hand = TRUE
 	time = 125
-	experience_given = MEDICAL_SKILL_ADVANCED
 
 /datum/surgery_step/reshape_ligaments/preop(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	display_results(user, target, "<span class='notice'>You start reshaping [target]'s ligaments into a hook-like shape.</span>",
@@ -37,10 +36,10 @@
 
 /datum/bioware/hooked_ligaments/on_gain()
 	..()
-	ADD_TRAIT(owner, TRAIT_LIMBATTACHMENT, "ligament_hook")
-	ADD_TRAIT(owner, TRAIT_EASYDISMEMBER, "ligament_hook")
+	ADD_TRAIT(owner, TRAIT_LIMBATTACHMENT, EXPERIMENTAL_SURGERY_TRAIT)
+	ADD_TRAIT(owner, TRAIT_EASYDISMEMBER, EXPERIMENTAL_SURGERY_TRAIT)
 
 /datum/bioware/hooked_ligaments/on_lose()
 	..()
-	REMOVE_TRAIT(owner, TRAIT_LIMBATTACHMENT, "ligament_hook")
-	REMOVE_TRAIT(owner, TRAIT_EASYDISMEMBER, "ligament_hook")
+	REMOVE_TRAIT(owner, TRAIT_LIMBATTACHMENT, EXPERIMENTAL_SURGERY_TRAIT)
+	REMOVE_TRAIT(owner, TRAIT_EASYDISMEMBER, EXPERIMENTAL_SURGERY_TRAIT)

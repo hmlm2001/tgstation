@@ -6,8 +6,7 @@
 	icon_keyboard = "tech_key"
 	icon_screen = "ai-fixer"
 	light_color = LIGHT_COLOR_PINK
-	ui_x = 370
-	ui_y = 360
+
 	/// Variable containing transferred AI
 	var/mob/living/silicon/ai/occupier
 	/// Variable dictating if we are in the process of restoring the occupier AI
@@ -22,11 +21,10 @@
 	else
 		return ..()
 
-/obj/machinery/computer/aifixer/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, \
-									datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/aifixer/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "ai_restorer", name, ui_x, ui_y, master_ui, state)
+		ui = new(user, src, "AiRestorer", name)
 		ui.open()
 
 /obj/machinery/computer/aifixer/ui_data(mob/user)
@@ -43,13 +41,15 @@
 		data["restoring"] = restoring
 		data["health"] = (occupier.health + 100) / 2
 		data["isDead"] = occupier.stat == DEAD
-		data["laws"] = occupier.laws.get_law_list(include_zeroth = 1)
+		data["laws"] = occupier.laws.get_law_list(include_zeroth = TRUE, render_html = FALSE)
 
 	return data
 
 /obj/machinery/computer/aifixer/ui_act(action, params)
-	if(..())
+	. = ..()
+	if(.)
 		return
+
 	if(!occupier)
 		restoring = FALSE
 
@@ -64,10 +64,9 @@
 
 /obj/machinery/computer/aifixer/proc/Fix()
 	use_power(1000)
-	occupier.adjustOxyLoss(-5, 0)
-	occupier.adjustFireLoss(-5, 0)
-	occupier.adjustToxLoss(-5, 0)
-	occupier.adjustBruteLoss(-5, 0)
+	occupier.adjustOxyLoss(-5, FALSE)
+	occupier.adjustFireLoss(-5, FALSE)
+	occupier.adjustBruteLoss(-5, FALSE)
 	occupier.updatehealth()
 	if(occupier.health >= 0 && occupier.stat == DEAD)
 		occupier.revive(full_heal = FALSE, admin_revive = FALSE)
@@ -82,7 +81,7 @@
 			var/oldstat = occupier.stat
 			restoring = Fix()
 			if(oldstat != occupier.stat)
-				update_icon()
+				update_appearance()
 
 /obj/machinery/computer/aifixer/update_overlays()
 	. = ..()
@@ -91,14 +90,15 @@
 
 	if(restoring)
 		. += "ai-fixer-on"
-	if (occupier)
-		switch (occupier.stat)
-			if (CONSCIOUS)
-				. += "ai-fixer-full"
-			if (UNCONSCIOUS)
-				. += "ai-fixer-404"
-	else
+
+	if(!occupier)
 		. += "ai-fixer-empty"
+		return
+	switch(occupier.stat)
+		if(CONSCIOUS)
+			. += "ai-fixer-full"
+		if(UNCONSCIOUS, HARD_CRIT)
+			. += "ai-fixer-404"
 
 /obj/machinery/computer/aifixer/transfer_ai(interaction, mob/user, mob/living/silicon/ai/AI, obj/item/aicard/card)
 	if(!..())
@@ -115,7 +115,7 @@
 		to_chat(AI, "<span class='alert'>You have been uploaded to a stationary terminal. Sadly, there is no remote access from here.</span>")
 		to_chat(user, "<span class='notice'>Transfer successful</span>: [AI.name] ([rand(1000,9999)].exe) installed and executed successfully. Local copy has been removed.")
 		card.AI = null
-		update_icon()
+		update_appearance()
 
 	else //Uploading AI from terminal to card
 		if(occupier && !restoring)
@@ -124,7 +124,7 @@
 			occupier.forceMove(card)
 			card.AI = occupier
 			occupier = null
-			update_icon()
+			update_appearance()
 		else if (restoring)
 			to_chat(user, "<span class='alert'>ERROR: Reconstruction in progress.</span>")
 		else if (!occupier)

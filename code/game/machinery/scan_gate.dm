@@ -1,22 +1,22 @@
-#define SCANGATE_NONE 			"Off"
-#define SCANGATE_MINDSHIELD 	"Mindshield"
-#define SCANGATE_NANITES 		"Nanites"
-#define SCANGATE_DISEASE 		"Disease"
-#define SCANGATE_GUNS 			"Guns"
-#define SCANGATE_WANTED			"Wanted"
-#define SCANGATE_SPECIES		"Species"
-#define SCANGATE_NUTRITION		"Nutrition"
+#define SCANGATE_NONE "Off"
+#define SCANGATE_MINDSHIELD "Mindshield"
+#define SCANGATE_NANITES "Nanites"
+#define SCANGATE_DISEASE "Disease"
+#define SCANGATE_GUNS "Guns"
+#define SCANGATE_WANTED "Wanted"
+#define SCANGATE_SPECIES "Species"
+#define SCANGATE_NUTRITION "Nutrition"
 
-#define SCANGATE_HUMAN			"human"
-#define SCANGATE_LIZARD			"lizard"
-#define SCANGATE_FELINID		"felinid"
-#define SCANGATE_FLY			"fly"
-#define SCANGATE_PLASMAMAN		"plasma"
-#define SCANGATE_MOTH			"moth"
-#define SCANGATE_JELLY			"jelly"
-#define SCANGATE_POD			"pod"
-#define SCANGATE_GOLEM			"golem"
-#define SCANGATE_ZOMBIE			"zombie"
+#define SCANGATE_HUMAN "human"
+#define SCANGATE_LIZARD "lizard"
+#define SCANGATE_FELINID "felinid"
+#define SCANGATE_FLY "fly"
+#define SCANGATE_PLASMAMAN "plasma"
+#define SCANGATE_MOTH "moth"
+#define SCANGATE_JELLY "jelly"
+#define SCANGATE_POD "pod"
+#define SCANGATE_GOLEM "golem"
+#define SCANGATE_ZOMBIE "zombie"
 
 /obj/machinery/scanner_gate
 	name = "scanner gate"
@@ -26,22 +26,41 @@
 	use_power = IDLE_POWER_USE
 	idle_power_usage = 50
 	circuit = /obj/item/circuitboard/machine/scanner_gate
-	ui_x = 400
-	ui_y = 300
 
 	var/scanline_timer
-	var/next_beep = 0 //avoids spam
+	///Internal timer to prevent audio spam.
+	var/next_beep = 0
+	///Bool to check if the scanner's controls are locked by an ID.
 	var/locked = FALSE
+	///Which setting is the scanner checking for? See defines in scan_gate.dm for the list.
 	var/scangate_mode = SCANGATE_NONE
+	///Is searching for a disease, what severity is enough to trigger the gate?
 	var/disease_threshold = DISEASE_SEVERITY_MINOR
+	///If scanning for a nanite strain, what cloud is it looking for?
 	var/nanite_cloud = 1
+	///If scanning for a specific species, what species is it looking for?
 	var/detect_species = SCANGATE_HUMAN
-	var/reverse = FALSE //If true, signals if the scan returns false
+	///Flips all scan results for inverse scanning. Signals if scan returns false.
+	var/reverse = FALSE
+	///If scanning for nutrition, what level of nutrition will trigger the scanner?
 	var/detect_nutrition = NUTRITION_LEVEL_FAT
+	///Will the assembly on the pass wire activate if the scanner resolves green (Pass) on crossing?
+	var/light_pass = FALSE
+	///Will the assembly on the pass wire activate if the scanner resolves red (fail) on crossing?
+	var/light_fail = FALSE
+	///Does the scanner ignore light_pass and light_fail for sending signals?
+	var/ignore_signals = FALSE
+
 
 /obj/machinery/scanner_gate/Initialize()
 	. = ..()
+	wires = new /datum/wires/scanner_gate(src)
 	set_scanline("passive")
+
+/obj/machinery/scanner_gate/Destroy()
+	qdel(wires)
+	wires = null
+	. = ..()
 
 /obj/machinery/scanner_gate/examine(mob/user)
 	. = ..()
@@ -55,7 +74,7 @@
 	auto_scan(AM)
 
 /obj/machinery/scanner_gate/proc/auto_scan(atom/movable/AM)
-	if(!(machine_stat & (BROKEN|NOPOWER)) && isliving(AM))
+	if(!(machine_stat & (BROKEN|NOPOWER)) && isliving(AM) & (!panel_open))
 		perform_scan(AM)
 
 /obj/machinery/scanner_gate/proc/set_scanline(type, duration)
@@ -81,7 +100,11 @@
 		else
 			to_chat(user, "<span class='warning'>You try to lock [src] with [W], but nothing happens.</span>")
 	else
-		return ..()
+		if(!locked && default_deconstruction_screwdriver(user, "scangate_open", "scangate", W))
+			return
+		if(panel_open && is_wire_tool(W))
+			wires.interact(user)
+	return ..()
 
 /obj/machinery/scanner_gate/emag_act(mob/user)
 	if(obj_flags & EMAGGED)
@@ -93,6 +116,7 @@
 
 /obj/machinery/scanner_gate/proc/perform_scan(mob/living/M)
 	var/beep = FALSE
+	var/color = null
 	switch(scangate_mode)
 		if(SCANGATE_NONE)
 			return
@@ -164,7 +188,15 @@
 		beep = !beep
 	if(beep)
 		alarm_beep()
+		if(!ignore_signals)
+			color = wires.get_color_of_wire(WIRE_ACCEPT)
+			var/obj/item/assembly/assembly = wires.get_attached(color)
+			assembly?.activate()
 	else
+		if(!ignore_signals)
+			color = wires.get_color_of_wire(WIRE_DENY)
+			var/obj/item/assembly/assembly = wires.get_attached(color)
+			assembly?.activate()
 		set_scanline("scanning", 10)
 
 /obj/machinery/scanner_gate/proc/alarm_beep()
@@ -180,11 +212,10 @@
 		return FALSE
 	return ..()
 
-/obj/machinery/scanner_gate/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, \
-										datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/scanner_gate/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "scanner_gate", name, ui_x, ui_y, master_ui, state)
+		ui = new(user, src, "ScannerGate", name)
 		ui.open()
 
 /obj/machinery/scanner_gate/ui_data()
@@ -199,8 +230,10 @@
 	return data
 
 /obj/machinery/scanner_gate/ui_act(action, params)
-	if(..())
+	. = ..()
+	if(.)
 		return
+
 	switch(action)
 		if("set_mode")
 			var/new_mode = params["new_mode"]
@@ -230,7 +263,7 @@
 			var/new_nutrition = params["new_nutrition"]
 			var/nutrition_list = list(
 				"Starving",
-  				"Obese"
+				"Obese"
 			)
 			if(new_nutrition && (new_nutrition in nutrition_list))
 				switch(new_nutrition)

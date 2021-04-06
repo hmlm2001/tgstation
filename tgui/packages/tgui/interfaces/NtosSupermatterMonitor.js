@@ -2,24 +2,38 @@ import { sortBy } from 'common/collections';
 import { flow } from 'common/fp';
 import { toFixed } from 'common/math';
 import { useBackend } from '../backend';
-import { Box, Button, Flex, LabeledList, ProgressBar, Section, Table } from '../components';
+import { Button, LabeledList, ProgressBar, Section, Stack, Table } from '../components';
 import { getGasColor, getGasLabel } from '../constants';
+import { NtosWindow } from '../layouts';
 
 const logScale = value => Math.log2(16 + Math.max(0, value)) - 4;
 
-export const NtosSupermatterMonitor = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+export const NtosSupermatterMonitor = (props, context) => {
+  return (
+    <NtosWindow
+      width={600}
+      height={350}>
+      <NtosWindow.Content scrollable>
+        <NtosSupermatterMonitorContent />
+      </NtosWindow.Content>
+    </NtosWindow>
+  );
+};
+
+export const NtosSupermatterMonitorContent = (props, context) => {
+  const { act, data } = useBackend(context);
   const {
     active,
     SM_integrity,
     SM_power,
     SM_ambienttemp,
     SM_ambientpressure,
+    SM_moles,
+    SM_bad_moles_amount,
   } = data;
   if (!active) {
     return (
-      <SupermatterList state={state} />
+      <SupermatterList />
     );
   }
   const gases = flow([
@@ -28,8 +42,8 @@ export const NtosSupermatterMonitor = props => {
   ])(data.gases || []);
   const gasMaxAmount = Math.max(1, ...gases.map(gas => gas.amount));
   return (
-    <Flex spacing={1}>
-      <Flex.Item width="270px">
+    <Stack>
+      <Stack.Item width="270px">
         <Section title="Metrics">
           <LabeledList>
             <LabeledList.Item label="Integrity">
@@ -68,6 +82,20 @@ export const NtosSupermatterMonitor = props => {
                 {toFixed(SM_ambienttemp) + ' K'}
               </ProgressBar>
             </LabeledList.Item>
+            <LabeledList.Item label="Total Moles">
+              <ProgressBar
+                value={logScale(SM_moles)}
+                minValue={0}
+                maxValue={logScale(50000)}
+                ranges={{
+                  good: [-Infinity, logScale(SM_bad_moles_amount * 0.75)],
+                  average: [logScale(SM_bad_moles_amount * 0.75), 
+                    logScale(SM_bad_moles_amount)],
+                  bad: [logScale(SM_bad_moles_amount), Infinity],
+                }}>
+                {toFixed(SM_moles) + ' moles'}
+              </ProgressBar>
+            </LabeledList.Item>
             <LabeledList.Item label="Pressure">
               <ProgressBar
                 value={logScale(SM_ambientpressure)}
@@ -83,8 +111,8 @@ export const NtosSupermatterMonitor = props => {
             </LabeledList.Item>
           </LabeledList>
         </Section>
-      </Flex.Item>
-      <Flex.Item grow={1}>
+      </Stack.Item>
+      <Stack.Item grow={1} basis={0}>
         <Section
           title="Gases"
           buttons={(
@@ -93,31 +121,29 @@ export const NtosSupermatterMonitor = props => {
               content="Back"
               onClick={() => act('PRG_clear')} />
           )}>
-          <Box.Forced height={gases.length * 24 + 'px'}>
-            <LabeledList>
-              {gases.map(gas => (
-                <LabeledList.Item
-                  key={gas.name}
-                  label={getGasLabel(gas.name)}>
-                  <ProgressBar
-                    color={getGasColor(gas.name)}
-                    value={gas.amount}
-                    minValue={0}
-                    maxValue={gasMaxAmount}>
-                    {toFixed(gas.amount, 2) + '%'}
-                  </ProgressBar>
-                </LabeledList.Item>
-              ))}
-            </LabeledList>
-          </Box.Forced>
+          <LabeledList>
+            {gases.map(gas => (
+              <LabeledList.Item
+                key={gas.name}
+                label={getGasLabel(gas.name)}>
+                <ProgressBar
+                  color={getGasColor(gas.name)}
+                  value={gas.amount}
+                  minValue={0}
+                  maxValue={gasMaxAmount}>
+                  {toFixed(gas.amount, 2) + '%'}
+                </ProgressBar>
+              </LabeledList.Item>
+            ))}
+          </LabeledList>
         </Section>
-      </Flex.Item>
-    </Flex>
+      </Stack.Item>
+    </Stack>
   );
 };
 
-const SupermatterList = props => {
-  const { act, data } = useBackend(props);
+const SupermatterList = (props, context) => {
+  const { act, data } = useBackend(context);
   const { supermatters = [] } = data;
   return (
     <Section

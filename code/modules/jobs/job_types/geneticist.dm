@@ -1,8 +1,6 @@
 /datum/job/geneticist
 	title = "Geneticist"
-	flag = GENETICIST
 	department_head = list("Research Director")
-	department_flag = MEDSCI
 	faction = "Station"
 	total_positions = 2
 	spawn_positions = 2
@@ -12,13 +10,16 @@
 	exp_requirements = 60
 
 	outfit = /datum/outfit/job/geneticist
+	plasmaman_outfit = /datum/outfit/plasmaman/genetics
+	departments = DEPARTMENT_MEDICAL
 
-	access = list(ACCESS_MORGUE, ACCESS_GENETICS, ACCESS_MECH_SCIENCE, ACCESS_RESEARCH, ACCESS_XENOBIOLOGY, ACCESS_ROBOTICS, ACCESS_MINERAL_STOREROOM, ACCESS_TECH_STORAGE)
-	minimal_access = list(ACCESS_MORGUE, ACCESS_GENETICS, ACCESS_MECH_SCIENCE, ACCESS_RESEARCH, ACCESS_MINERAL_STOREROOM)
 	paycheck = PAYCHECK_MEDIUM
 	paycheck_department = ACCOUNT_SCI
 
 	display_order = JOB_DISPLAY_ORDER_GENETICIST
+	bounty_types = CIV_JOB_SCI
+
+	family_heirlooms = list(/obj/item/clothing/under/shorts/purple)
 
 /datum/outfit/job/geneticist
 	name = "Geneticist"
@@ -34,4 +35,6 @@
 
 	backpack = /obj/item/storage/backpack/genetics
 	satchel = /obj/item/storage/backpack/satchel/gen
+	duffelbag = /obj/item/storage/backpack/duffelbag/genetics
 
+	id_trim = /datum/id_trim/job/geneticist

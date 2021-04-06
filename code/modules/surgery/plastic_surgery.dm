@@ -8,7 +8,6 @@
 	name = "reshape face"
 	implements = list(TOOL_SCALPEL = 100, /obj/item/kitchen/knife = 50, TOOL_WIRECUTTER = 35)
 	time = 64
-	experience_given = MEDICAL_SKILL_MEDIUM
 
 /datum/surgery_step/reshape_face/preop(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	user.visible_message("<span class='notice'>[user] begins to alter [target]'s appearance.</span>", "<span class='notice'>You begin to alter [target]'s appearance...</span>")
@@ -36,7 +35,7 @@
 			return
 		var/oldname = target.real_name
 		target.real_name = chosen_name
-		var/newname = target.real_name	//something about how the code handles names required that I use this instead of target.real_name
+		var/newname = target.real_name //something about how the code handles names required that I use this instead of target.real_name
 		display_results(user, target, "<span class='notice'>You alter [oldname]'s appearance completely, [target.p_they()] is now [newname].</span>",
 			"<span class='notice'>[user] alters [oldname]'s appearance completely, [target.p_they()] is now [newname]!</span>",
 			"<span class='notice'>[user] finishes the operation on [target]'s face.</span>")

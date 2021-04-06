@@ -12,12 +12,13 @@
 	hardware_flag = PROGRAM_LAPTOP
 	max_hardware_size = 2
 	w_class = WEIGHT_CLASS_NORMAL
+	max_bays = 4
 
 	// No running around with open laptops in hands.
 	item_flags = SLOWS_WHILE_IN_HAND
 
-	screen_on = 0 		// Starts closed
-	var/start_open = TRUE	// unless this var is set to 1
+	screen_on = FALSE // Starts closed
+	var/start_open = TRUE // unless this var is set to 1
 	var/icon_state_closed = "laptop-closed"
 	var/w_class_open = WEIGHT_CLASS_BULKY
 	var/slowdown_open = TRUE
@@ -36,15 +37,14 @@
 /obj/item/modular_computer/laptop/update_icon_state()
 	if(!screen_on)
 		icon_state = icon_state_closed
-	else
-		. = ..()
+		return
+	return ..()
 
 /obj/item/modular_computer/laptop/update_overlays()
-	if(screen_on)
-		return ..()
-	else
+	if(!screen_on)
 		cut_overlays()
-		icon_state = icon_state_closed
+		return
+	return ..()
 
 /obj/item/modular_computer/laptop/attack_self(mob/user)
 	if(!screen_on)
@@ -63,16 +63,18 @@
 	. = ..()
 	if(over_object == usr || over_object == src)
 		try_toggle_open(usr)
-	else if(istype(over_object, /obj/screen/inventory/hand))
-		var/obj/screen/inventory/hand/H = over_object
+		return
+	if(istype(over_object, /atom/movable/screen/inventory/hand))
+		var/atom/movable/screen/inventory/hand/H = over_object
 		var/mob/M = usr
 
-		if(!M.restrained() && !M.stat)
-			if(!isturf(loc) || !Adjacent(M))
-				return
-			M.put_in_hand(src, H.held_index)
+		if(M.stat != CONSCIOUS || HAS_TRAIT(M, TRAIT_HANDS_BLOCKED))
+			return
+		if(!isturf(loc) || !Adjacent(M))
+			return
+		M.put_in_hand(src, H.held_index)
 
-/obj/item/modular_computer/laptop/attack_hand(mob/user)
+/obj/item/modular_computer/laptop/attack_hand(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -108,7 +110,7 @@
 
 	screen_on = !screen_on
 	display_overlays = screen_on
-	update_icon()
+	update_appearance()
 
 
 

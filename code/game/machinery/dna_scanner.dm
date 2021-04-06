@@ -3,6 +3,7 @@
 	desc = "It scans DNA structures."
 	icon = 'icons/obj/machines/cloning.dmi'
 	icon_state = "scanner"
+	base_icon_state = "scanner"
 	density = TRUE
 	use_power = IDLE_POWER_USE
 	idle_power_usage = 50
@@ -15,6 +16,7 @@
 	var/precision_coeff
 	var/message_cooldown
 	var/breakout_time = 1200
+	var/obj/machinery/computer/scan_consolenew/linked_console = null
 
 /obj/machinery/dna_scannernew/RefreshParts()
 	scan_level = 0
@@ -35,20 +37,21 @@
 /obj/machinery/dna_scannernew/update_icon_state()
 	//no power or maintenance
 	if(machine_stat & (NOPOWER|BROKEN))
-		icon_state = initial(icon_state)+ (state_open ? "_open" : "") + "_unpowered"
-		return
+		icon_state = "[base_icon_state][state_open ? "_open" : null]_unpowered"
+		return ..()
 
 	if((machine_stat & MAINT) || panel_open)
-		icon_state = initial(icon_state)+ (state_open ? "_open" : "") + "_maintenance"
-		return
+		icon_state = "[base_icon_state][state_open ? "_open" : null]_maintenance"
+		return ..()
 
 	//running and someone in there
 	if(occupant)
-		icon_state = initial(icon_state)+ "_occupied"
-		return
+		icon_state = "[base_icon_state]_occupied"
+		return ..()
 
 	//running
-	icon_state = initial(icon_state)+ (state_open ? "_open" : "")
+	icon_state = "[base_icon_state][state_open ? "_open" : null]"
+	return ..()
 
 /obj/machinery/dna_scannernew/proc/toggle_open(mob/user)
 	if(panel_open)
@@ -65,7 +68,7 @@
 
 	open_machine()
 
-/obj/machinery/dna_scannernew/container_resist(mob/living/user)
+/obj/machinery/dna_scannernew/container_resist_act(mob/living/user)
 	if(!locked)
 		open_machine()
 		return
@@ -97,9 +100,8 @@
 
 	// DNA manipulators cannot operate on severed heads or brains
 	if(iscarbon(occupant))
-		var/obj/machinery/computer/scan_consolenew/console = locate_computer(/obj/machinery/computer/scan_consolenew)
-		if(console)
-			console.on_scanner_close()
+		if(linked_console)
+			linked_console.on_scanner_close()
 
 	return TRUE
 
@@ -109,9 +111,12 @@
 
 	..()
 
+	if(linked_console)
+		linked_console.on_scanner_open()
+
 	return TRUE
 
-/obj/machinery/dna_scannernew/relaymove(mob/user as mob)
+/obj/machinery/dna_scannernew/relaymove(mob/living/user, direction)
 	if(user.stat || locked)
 		if(message_cooldown <= world.time)
 			message_cooldown = world.time + 50
@@ -122,7 +127,7 @@
 /obj/machinery/dna_scannernew/attackby(obj/item/I, mob/user, params)
 
 	if(!occupant && default_deconstruction_screwdriver(user, icon_state, icon_state, I))//sent icon_state is irrelevant...
-		update_icon()//..since we're updating the icon here, since the scanner can be unpowered when opened/closed
+		update_appearance()//..since we're updating the icon here, since the scanner can be unpowered when opened/closed
 		return
 
 	if(default_pry_open(I))
@@ -137,8 +142,7 @@
 	toggle_open(user)
 
 /obj/machinery/dna_scannernew/MouseDrop_T(mob/target, mob/user)
-	var/mob/living/L = user
-	if(user.stat || (isliving(user) && (!(L.mobility_flags & MOBILITY_STAND) || !(L.mobility_flags & MOBILITY_UI))) || !Adjacent(user) || !user.Adjacent(target) || !iscarbon(target) || !user.IsAdvancedToolUser())
+	if(user.stat != CONSCIOUS || HAS_TRAIT(user, TRAIT_UI_BLOCKED) || !Adjacent(user) || !user.Adjacent(target) || !iscarbon(target) || !ISADVANCEDTOOLUSER(user))
 		return
 	close_machine(target)
 
@@ -147,7 +151,7 @@
 /obj/item/disk/data
 	name = "DNA data disk"
 	icon_state = "datadisk0" //Gosh I hope syndies don't mistake them for the nuke disk.
-	var/list/fields = list()
+	var/list/genetic_makeup_buffer = list()
 	var/list/mutations = list()
 	var/max_mutations = 6
 	var/read_only = FALSE //Well,it's still a floppy disk

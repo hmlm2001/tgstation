@@ -1,9 +1,10 @@
 #define STASIS_TOGGLE_COOLDOWN 50
 /obj/machinery/stasis
-	name = "Lifeform Stasis Unit"
+	name = "lifeform stasis unit"
 	desc = "A not so comfortable looking bed with some nozzles at the top and bottom. It will keep someone in stasis."
 	icon = 'icons/obj/machines/stasis.dmi'
 	icon_state = "stasis"
+	base_icon_state = "stasis"
 	density = FALSE
 	can_buckle = TRUE
 	buckle_lying = 90
@@ -17,25 +18,13 @@
 	var/stasis_can_toggle = 0
 	var/mattress_state = "stasis_on"
 	var/obj/effect/overlay/vis/mattress_on
-	var/obj/machinery/computer/operating/op_computer
-
-/obj/machinery/stasis/Initialize()
-	. = ..()
-	for(var/direction in GLOB.cardinals)
-		op_computer = locate(/obj/machinery/computer/operating, get_step(src, direction))
-		if(op_computer)
-			op_computer.sbed = src
-			break
 
 /obj/machinery/stasis/Destroy()
 	. = ..()
-	if(op_computer && op_computer.sbed == src)
-		op_computer.sbed = null
 
 /obj/machinery/stasis/examine(mob/user)
 	. = ..()
 	. += "<span class='notice'>Alt-click to [stasis_enabled ? "turn off" : "turn on"] the machine.</span>"
-	. += "<span class='notice'>\The [src] is [op_computer ? "linked" : "<b>NOT</b> linked"] to a nearby operating computer.</span>"
 
 /obj/machinery/stasis/proc/play_power_sound()
 	var/_running = stasis_running()
@@ -56,7 +45,7 @@
 					"<span class='notice'>You [stasis_enabled ? "power on" : "shut down"] \the [src].</span>", \
 					"<span class='hear'>You hear a nearby machine [stasis_enabled ? "power on" : "shut down"].</span>")
 		play_power_sound()
-		update_icon()
+		update_appearance()
 
 /obj/machinery/stasis/Exited(atom/movable/AM, atom/newloc)
 	if(AM == occupant)
@@ -66,34 +55,37 @@
 	. = ..()
 
 /obj/machinery/stasis/proc/stasis_running()
-	return stasis_enabled && is_operational()
+	return stasis_enabled && is_operational
 
 /obj/machinery/stasis/update_icon_state()
 	if(machine_stat & BROKEN)
-		icon_state = "stasis_broken"
-		return
+		icon_state = "[base_icon_state]_broken"
+		return ..()
 	if(panel_open || machine_stat & MAINT)
-		icon_state = "stasis_maintenance"
-		return
-	icon_state = "stasis"
+		icon_state = "[base_icon_state]_maintenance"
+		return ..()
+	icon_state = base_icon_state
+	return ..()
 
 /obj/machinery/stasis/update_overlays()
 	. = ..()
+	if(!mattress_state)
+		return
 	var/_running = stasis_running()
-	var/list/overlays_to_remove = managed_vis_overlays
+	if(!mattress_on)
+		mattress_on = SSvis_overlays.add_vis_overlay(src, icon, mattress_state, BELOW_OBJ_LAYER, plane, dir, alpha = 0, unique = TRUE)
+	else
+		vis_contents += mattress_on
+		if(managed_vis_overlays)
+			managed_vis_overlays += mattress_on
+		else
+			managed_vis_overlays = list(mattress_on)
 
-	if(mattress_state)
-		if(!mattress_on || !managed_vis_overlays)
-			mattress_on = SSvis_overlays.add_vis_overlay(src, icon, mattress_state, layer, plane, dir, alpha = 0, unique = TRUE)
+	if(mattress_on.alpha ? !_running : _running) //check the inverse of _running compared to truthy alpha, to see if they differ
+		var/new_alpha = _running ? 255 : 0
+		var/easing_direction = _running ? EASE_OUT : EASE_IN
+		animate(mattress_on, alpha = new_alpha, time = 50, easing = CUBIC_EASING|easing_direction)
 
-		if(mattress_on.alpha ? !_running : _running) //check the inverse of _running compared to truthy alpha, to see if they differ
-			var/new_alpha = _running ? 255 : 0
-			var/easing_direction = _running ? EASE_OUT : EASE_IN
-			animate(mattress_on, alpha = new_alpha, time = 50, easing = CUBIC_EASING|easing_direction)
-
-		overlays_to_remove = managed_vis_overlays - mattress_on
-
-	SSvis_overlays.remove_vis_overlay(src, overlays_to_remove)
 
 /obj/machinery/stasis/obj_break(damage_flag)
 	. = ..()
@@ -110,33 +102,29 @@
 	var/freq = rand(24750, 26550)
 	playsound(src, 'sound/effects/spray.ogg', 5, TRUE, 2, frequency = freq)
 	target.apply_status_effect(STATUS_EFFECT_STASIS, STASIS_MACHINE_EFFECT)
-	target.ExtinguishMob()
+	ADD_TRAIT(target, TRAIT_TUMOR_SUPPRESSED, TRAIT_GENERIC)
+	target.extinguish_mob()
 	use_power = ACTIVE_POWER_USE
 
 /obj/machinery/stasis/proc/thaw_them(mob/living/target)
 	target.remove_status_effect(STATUS_EFFECT_STASIS, STASIS_MACHINE_EFFECT)
+	REMOVE_TRAIT(target, TRAIT_TUMOR_SUPPRESSED, TRAIT_GENERIC)
 	if(target == occupant)
 		use_power = IDLE_POWER_USE
 
 /obj/machinery/stasis/post_buckle_mob(mob/living/L)
 	if(!can_be_occupant(L))
 		return
-	occupant = L
+	set_occupant(L)
 	if(stasis_running() && check_nap_violations())
 		chill_out(L)
-	update_icon()
-
-/obj/machinery/stasis/proc/check_patient()
-	if(occupant)
-		return TRUE
-	else
-		return FALSE
+	update_appearance()
 
 /obj/machinery/stasis/post_unbuckle_mob(mob/living/L)
 	thaw_them(L)
 	if(L == occupant)
-		occupant = null
-	update_icon()
+		set_occupant(null)
+	update_appearance()
 
 /obj/machinery/stasis/process()
 	if( !( occupant && isliving(occupant) && check_nap_violations() ) )
@@ -152,7 +140,7 @@
 /obj/machinery/stasis/screwdriver_act(mob/living/user, obj/item/I)
 	. = ..()
 	. |= default_deconstruction_screwdriver(user, "stasis_maintenance", "stasis", I)
-	update_icon()
+	update_appearance()
 
 /obj/machinery/stasis/crowbar_act(mob/living/user, obj/item/I)
 	. = ..()
@@ -161,9 +149,4 @@
 /obj/machinery/stasis/nap_violation(mob/violator)
 	unbuckle_mob(violator, TRUE)
 
-/obj/machinery/stasis/attack_robot(mob/user)
-	if(Adjacent(user) && occupant)
-		unbuckle_mob(occupant)
-	else
-		..()
 #undef STASIS_TOGGLE_COOLDOWN

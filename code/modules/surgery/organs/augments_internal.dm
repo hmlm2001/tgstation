@@ -8,7 +8,7 @@
 	var/implant_overlay
 	var/syndicate_implant = FALSE //Makes the implant invisible to health analyzers and medical HUDs.
 
-/obj/item/organ/cyberimp/New(var/mob/M = null)
+/obj/item/organ/cyberimp/New(mob/M = null)
 	if(iscarbon(M))
 		src.Insert(M)
 	if(implant_overlay)
@@ -61,7 +61,7 @@
 		else
 			for(var/obj/item/I in stored_items)
 				to_chat(owner, "<span class='notice'>Your [owner.get_held_index_name(owner.get_held_index_of_item(I))]'s grip tightens.</span>")
-				ADD_TRAIT(I, TRAIT_NODROP, ANTI_DROP_IMPLANT_TRAIT)
+				ADD_TRAIT(I, TRAIT_NODROP, IMPLANT_TRAIT)
 
 	else
 		release_items()
@@ -85,11 +85,11 @@
 
 /obj/item/organ/cyberimp/brain/anti_drop/proc/release_items()
 	for(var/obj/item/I in stored_items)
-		REMOVE_TRAIT(I, TRAIT_NODROP, ANTI_DROP_IMPLANT_TRAIT)
+		REMOVE_TRAIT(I, TRAIT_NODROP, IMPLANT_TRAIT)
 	stored_items = list()
 
 
-/obj/item/organ/cyberimp/brain/anti_drop/Remove(var/mob/living/carbon/M, special = 0)
+/obj/item/organ/cyberimp/brain/anti_drop/Remove(mob/living/carbon/M, special = 0)
 	if(active)
 		ui_action_click()
 	..()
@@ -164,10 +164,10 @@
 	desc = "A sleek, sturdy box."
 	icon_state = "cyber_implants"
 	var/list/boxed = list(
-		/obj/item/autosurgeon/syndicate/thermal_eyes,
-		/obj/item/autosurgeon/syndicate/xray_eyes,
-		/obj/item/autosurgeon/syndicate/anti_stun,
-		/obj/item/autosurgeon/syndicate/reviver)
+		/obj/item/autosurgeon/organ/syndicate/thermal_eyes,
+		/obj/item/autosurgeon/organ/syndicate/xray_eyes,
+		/obj/item/autosurgeon/organ/syndicate/anti_stun,
+		/obj/item/autosurgeon/organ/syndicate/reviver)
 	var/amount = 5
 
 /obj/item/storage/box/cyber_implants/PopulateContents()

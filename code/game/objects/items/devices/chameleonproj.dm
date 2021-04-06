@@ -5,7 +5,8 @@
 	flags_1 = CONDUCT_1
 	item_flags = NOBLUDGEON
 	slot_flags = ITEM_SLOT_BELT
-	item_state = "electronic"
+	inhand_icon_state = "electronic"
+	worn_icon_state = "electronic"
 	lefthand_file = 'icons/mob/inhands/misc/devices_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/misc/devices_righthand.dmi'
 	throwforce = 5
@@ -120,11 +121,7 @@
 	appearance = saved_appearance
 	if(istype(M.buckled, /obj/vehicle))
 		var/obj/vehicle/V = M.buckled
-		var/datum/component/riding/VRD = V.GetComponent(/datum/component/riding)
-		if(VRD)
-			VRD.force_dismount(M)
-		else
-			V.unbuckle_mob(M, force = TRUE)
+		V.unbuckle_mob(M, force = TRUE)
 	M.forceMove(src)
 	master = C
 	master.active_dummy = src
@@ -133,16 +130,16 @@
 	master.disrupt()
 
 //ATTACK HAND IGNORING PARENT RETURN VALUE
-/obj/effect/dummy/chameleon/attack_hand()
+/obj/effect/dummy/chameleon/attack_hand(mob/user, list/modifiers)
 	master.disrupt()
 
-/obj/effect/dummy/chameleon/attack_animal()
+/obj/effect/dummy/chameleon/attack_animal(mob/user, list/modifiers)
 	master.disrupt()
 
 /obj/effect/dummy/chameleon/attack_slime()
 	master.disrupt()
 
-/obj/effect/dummy/chameleon/attack_alien()
+/obj/effect/dummy/chameleon/attack_alien(mob/user, list/modifiers)
 	master.disrupt()
 
 /obj/effect/dummy/chameleon/ex_act(S, T)
@@ -153,7 +150,7 @@
 	. = ..()
 	master.disrupt()
 
-/obj/effect/dummy/chameleon/relaymove(mob/user, direction)
+/obj/effect/dummy/chameleon/relaymove(mob/living/user, direction)
 	if(isspaceturf(loc) || !direction)
 		return //No magical space movement!
 

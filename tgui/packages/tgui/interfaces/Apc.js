@@ -1,50 +1,64 @@
-import { Fragment } from 'inferno';
 import { useBackend } from '../backend';
 import { Box, Button, LabeledList, NoticeBox, ProgressBar, Section } from '../components';
+import { Window } from '../layouts';
 import { InterfaceLockNoticeBox } from './common/InterfaceLockNoticeBox';
 
-export const Apc = props => {
-  const { act, data } = useBackend(props);
+export const Apc = (props, context) => {
+  return (
+    <Window
+      width={450}
+      height={445}>
+      <Window.Content scrollable>
+        <ApcContent />
+      </Window.Content>
+    </Window>
+  );
+};
+
+const powerStatusMap = {
+  2: {
+    color: 'good',
+    externalPowerText: 'External Power',
+    chargingText: 'Fully Charged',
+  },
+  1: {
+    color: 'average',
+    externalPowerText: 'Low External Power',
+    chargingText: 'Charging',
+  },
+  0: {
+    color: 'bad',
+    externalPowerText: 'No External Power',
+    chargingText: 'Not Charging',
+  },
+};
+
+const malfMap = {
+  1: {
+    icon: 'terminal',
+    content: 'Override Programming',
+    action: 'hack',
+  },
+  2: {
+    icon: 'caret-square-down',
+    content: 'Shunt Core Process',
+    action: 'occupy',
+  },
+  3: {
+    icon: 'caret-square-left',
+    content: 'Return to Main Core',
+    action: 'deoccupy',
+  },
+  4: {
+    icon: 'caret-square-down',
+    content: 'Shunt Core Process',
+    action: 'occupy',
+  },
+};
+
+const ApcContent = (props, context) => {
+  const { act, data } = useBackend(context);
   const locked = data.locked && !data.siliconUser;
-  const powerStatusMap = {
-    2: {
-      color: 'good',
-      externalPowerText: 'External Power',
-      chargingText: 'Fully Charged',
-    },
-    1: {
-      color: 'average',
-      externalPowerText: 'Low External Power',
-      chargingText: 'Charging',
-    },
-    0: {
-      color: 'bad',
-      externalPowerText: 'No External Power',
-      chargingText: 'Not Charging',
-    },
-  };
-  const malfMap = {
-    1: {
-      icon: 'terminal',
-      content: 'Override Programming',
-      action: 'hack',
-    },
-    2: {
-      icon: 'caret-square-down',
-      content: 'Shunt Core Process',
-      action: 'occupy',
-    },
-    3: {
-      icon: 'caret-square-left',
-      content: 'Return to Main Core',
-      action: 'deoccupy',
-    },
-    4: {
-      icon: 'caret-square-down',
-      content: 'Shunt Core Process',
-      action: 'occupy',
-    },
-  };
   const externalPowerStatus = powerStatusMap[data.externalPower]
     || powerStatusMap[0];
   const chargingStatus = powerStatusMap[data.chargingStatus]
@@ -52,7 +66,6 @@ export const Apc = props => {
   const channelArray = data.powerChannels || [];
   const malfStatus = malfMap[data.malfStatus] || malfMap[0];
   const adjustedCellChange = data.powerCellStatus / 100;
-
   if (data.failTime > 0) {
     return (
       <NoticeBox>
@@ -70,13 +83,9 @@ export const Apc = props => {
       </NoticeBox>
     );
   }
-
   return (
-    <Fragment>
-      <InterfaceLockNoticeBox
-        siliconUser={data.siliconUser}
-        locked={data.locked}
-        onLockStatusChange={() => act('lock')} />
+    <>
+      <InterfaceLockNoticeBox />
       <Section title="Power Status">
         <LabeledList>
           <LabeledList.Item
@@ -120,7 +129,7 @@ export const Apc = props => {
                 key={channel.title}
                 label={channel.title}
                 buttons={(
-                  <Fragment>
+                  <>
                     <Box inline mx={2}
                       color={channel.status >= 2 ? 'good' : 'bad'}>
                       {channel.status >= 2 ? 'On' : 'Off'}
@@ -145,7 +154,7 @@ export const Apc = props => {
                       selected={!locked && channel.status === 0}
                       disabled={locked}
                       onClick={() => act('channel', topicParams.off)} />
-                  </Fragment>
+                  </>
                 )}>
                 {channel.powerLoad}
               </LabeledList.Item>
@@ -159,7 +168,7 @@ export const Apc = props => {
       <Section
         title="Misc"
         buttons={!!data.siliconUser && (
-          <Fragment>
+          <>
             {!!data.malfStatus && (
               <Button
                 icon={malfStatus.icon}
@@ -171,35 +180,37 @@ export const Apc = props => {
               icon="lightbulb-o"
               content="Overload"
               onClick={() => act('overload')} />
-          </Fragment>
+          </>
         )}>
-        <LabeledList.Item
-          label="Cover Lock"
-          buttons={(
-            <Button
-              icon={data.coverLocked ? 'lock' : 'unlock'}
-              content={data.coverLocked ? 'Engaged' : 'Disengaged'}
-              disabled={locked}
-              onClick={() => act('cover')} />
-          )} />
-        <LabeledList.Item
-          label="Emergency Lighting"
-          buttons={(
-            <Button
-              icon="lightbulb-o"
-              content={data.emergencyLights ? 'Enabled' : 'Disabled'}
-              disabled={locked}
-              onClick={() => act('emergency_lighting')} />
-          )} />
-        <LabeledList.Item
-          label="Night Shift Lighting"
-          buttons={(
-            <Button
-              icon="lightbulb-o"
-              content={data.nightshiftLights ? 'Enabled' : 'Disabled'}
-              onClick={() => act('toggle_nightshift')} />
-          )} />
+        <LabeledList>
+          <LabeledList.Item
+            label="Cover Lock"
+            buttons={(
+              <Button
+                icon={data.coverLocked ? 'lock' : 'unlock'}
+                content={data.coverLocked ? 'Engaged' : 'Disengaged'}
+                disabled={locked}
+                onClick={() => act('cover')} />
+            )} />
+          <LabeledList.Item
+            label="Emergency Lighting"
+            buttons={(
+              <Button
+                icon="lightbulb-o"
+                content={data.emergencyLights ? 'Enabled' : 'Disabled'}
+                disabled={locked}
+                onClick={() => act('emergency_lighting')} />
+            )} />
+          <LabeledList.Item
+            label="Night Shift Lighting"
+            buttons={(
+              <Button
+                icon="lightbulb-o"
+                content={data.nightshiftLights ? 'Enabled' : 'Disabled'}
+                onClick={() => act('toggle_nightshift')} />
+            )} />
+        </LabeledList>
       </Section>
-    </Fragment>
+    </>
   );
 };

@@ -15,7 +15,6 @@
 	name = "shape vein muscles"
 	accept_hand = TRUE
 	time = 125
-	experience_given = MEDICAL_SKILL_ADVANCED
 
 /datum/surgery_step/muscled_veins/preop(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	display_results(user, target, "<span class='notice'>You start wrapping muscles around [target]'s circulatory system.</span>",
@@ -36,8 +35,8 @@
 
 /datum/bioware/muscled_veins/on_gain()
 	..()
-	ADD_TRAIT(owner, TRAIT_STABLEHEART, "muscled_veins")
+	ADD_TRAIT(owner, TRAIT_STABLEHEART, EXPERIMENTAL_SURGERY_TRAIT)
 
 /datum/bioware/muscled_veins/on_lose()
 	..()
-	REMOVE_TRAIT(owner, TRAIT_STABLEHEART, "muscled_veins")
+	REMOVE_TRAIT(owner, TRAIT_STABLEHEART, EXPERIMENTAL_SURGERY_TRAIT)

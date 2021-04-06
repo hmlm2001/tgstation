@@ -54,11 +54,6 @@
 	..()
 	nukes_left--
 
-/datum/game_mode/nuclear/check_win()
-	if (nukes_left == 0)
-		return TRUE
-	return ..()
-
 /datum/game_mode/nuclear/check_finished()
 	//Keep the round going if ops are dead but bomb is ticking.
 	if(nuke_team.operatives_dead())
@@ -69,7 +64,7 @@
 
 /datum/game_mode/nuclear/set_round_result()
 	..()
-	var result = nuke_team.get_result()
+	var/result = nuke_team.get_result()
 	switch(result)
 		if(NUKE_RESULT_FLUKE)
 			SSticker.mode_result = "loss - syndicate nuked - disk secured"
@@ -118,22 +113,26 @@
 	gloves =  /obj/item/clothing/gloves/combat
 	back = /obj/item/storage/backpack/fireproof
 	ears = /obj/item/radio/headset/syndicate/alt
-	l_pocket = /obj/item/pinpointer/nuke/syndicate
-	id = /obj/item/card/id/syndicate
+	l_pocket = /obj/item/modular_computer/tablet/nukeops
+	id = /obj/item/card/id/advanced/chameleon
 	belt = /obj/item/gun/ballistic/automatic/pistol
 	backpack_contents = list(/obj/item/storage/box/survival/syndie=1,\
 		/obj/item/kitchen/knife/combat/survival)
+
+	skillchips = list(/obj/item/skillchip/disk_verifier)
 
 	var/tc = 25
 	var/command_radio = FALSE
 	var/uplink_type = /obj/item/uplink/nuclear
 
+	id_trim = /datum/id_trim/chameleon/operative
 
 /datum/outfit/syndicate/leader
 	name = "Syndicate Leader - Basic"
-	id = /obj/item/card/id/syndicate/nuke_leader
 	gloves = /obj/item/clothing/gloves/krav_maga/combatglovesplus
 	command_radio = TRUE
+
+	id_trim = /datum/id_trim/chameleon/operative/nuke_leader
 
 /datum/outfit/syndicate/no_crystals
 	name = "Syndicate Operative - Reinforcement"

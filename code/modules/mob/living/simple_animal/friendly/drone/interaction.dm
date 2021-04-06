@@ -30,7 +30,7 @@
 					return
 
 //ATTACK HAND IGNORING PARENT RETURN VALUE
-/mob/living/simple_animal/drone/attack_hand(mob/user)
+/mob/living/simple_animal/drone/attack_hand(mob/user, list/modifiers)
 	if(ishuman(user))
 		if(stat == DEAD || status_flags & GODMODE || !can_be_held)
 			..()
@@ -53,17 +53,29 @@
 		DH.slot_flags = worn_slot_flags
 		user.put_in_hands(DH)
 
+/**
+ * Called when a drone attempts to reactivate a dead drone
+ *
+ * If the owner is still ghosted, will notify them.
+ * If the owner cannot be found, fails with an error message.
+ *
+ * Arguments:
+ * * user - The [/mob/living] attempting to reactivate the drone
+ */
 /mob/living/simple_animal/drone/proc/try_reactivate(mob/living/user)
 	var/mob/dead/observer/G = get_ghost()
 	if(!client && (!G || !G.client))
-		var/list/faux_gadgets = list("hypertext inflator","failsafe directory","DRM switch","stack initializer",\
-									 "anti-freeze capacitor","data stream diode","TCP bottleneck","supercharged I/O bolt",\
-									 "tradewind stabilizer","radiated XML cable","registry fluid tank","open-source debunker")
+		var/list/faux_gadgets = list(
+			"hypertext inflator","failsafe directory","DRM switch","stack initializer",\
+			"anti-freeze capacitor","data stream diode","TCP bottleneck","supercharged I/O bolt",\
+			"tradewind stabilizer","radiated XML cable","registry fluid tank","open-source debunker",
+		)
 
 		var/list/faux_problems = list("won't be able to tune their bootstrap projector","will constantly remix their binary pool"+\
-									  " even though the BMX calibrator is working","will start leaking their XSS coolant",\
-									  "can't tell if their ethernet detour is moving or not", "won't be able to reseed enough"+\
-									  " kernels to function properly","can't start their neurotube console")
+			" even though the BMX calibrator is working","will start leaking their XSS coolant",\
+			"can't tell if their ethernet detour is moving or not", "won't be able to reseed enough"+\
+			" kernels to function properly","can't start their neurotube console",
+		)
 
 		to_chat(user, "<span class='warning'>You can't seem to find the [pick(faux_gadgets)]! Without it, [src] [pick(faux_problems)].</span>")
 		return
@@ -92,10 +104,10 @@
 		return //This used to not exist and drones who repaired themselves also stabbed the shit out of themselves.
 	else if(I.tool_behaviour == TOOL_WRENCH && user != src) //They aren't required to be hacked, because laws can change in other ways (i.e. admins)
 		user.visible_message("<span class='notice'>[user] starts resetting [src]...</span>", \
-							 "<span class='notice'>You press down on [src]'s factory reset control...</span>")
+			"<span class='notice'>You press down on [src]'s factory reset control...</span>")
 		if(I.use_tool(src, user, 50, volume=50))
 			user.visible_message("<span class='notice'>[user] resets [src]!</span>", \
-								 "<span class='notice'>You reset [src]'s directives to factory defaults!</span>")
+				"<span class='notice'>You reset [src]'s directives to factory defaults!</span>")
 			update_drone_hack(FALSE)
 		return
 	else
@@ -111,6 +123,18 @@
 /mob/living/simple_animal/drone/proc/get_armor_effectiveness()
 	return 0 //multiplier for whatever head armor you wear as a drone
 
+/**
+ * Hack or unhack a drone
+ *
+ * This changes the drone's laws to destroy the station or resets them
+ * to normal.
+ *
+ * Some debuffs are applied like slowing the drone down and disabling
+ * vent crawling
+ *
+ * Arguments
+ * * hack - Boolean if the drone is being hacked or unhacked
+ */
 /mob/living/simple_animal/drone/proc/update_drone_hack(hack)
 	if(!mind)
 		return
@@ -129,7 +153,7 @@
 		to_chat(src, "<i>Your onboard antivirus has initiated lockdown. Motor servos are impaired, ventilation access is denied, and your display reports that you are hacked to all nearby.</i>")
 		hacked = TRUE
 		mind.special_role = "hacked drone"
-		ventcrawler = VENTCRAWLER_NONE //Again, balance
+		REMOVE_TRAIT(src, TRAIT_VENTCRAWLER_ALWAYS, INNATE_TRAIT)
 		speed = 1 //gotta go slow
 		message_admins("[ADMIN_LOOKUPFLW(src)] became a hacked drone hellbent on destroying the station!")
 	else
@@ -144,35 +168,47 @@
 		to_chat(src, "<i>Having been restored, your onboard antivirus reports the all-clear and you are able to perform all actions again.</i>")
 		hacked = FALSE
 		mind.special_role = null
-		ventcrawler = initial(ventcrawler)
+		ADD_TRAIT(src, TRAIT_VENTCRAWLER_ALWAYS, INNATE_TRAIT)
 		speed = initial(speed)
 		message_admins("[ADMIN_LOOKUPFLW(src)], a hacked drone, was restored to factory defaults!")
-	update_drone_icon()
+	update_drone_icon_hacked()
 
+/**
+ *   # F R E E D R O N E
+ * ### R
+ * ### E
+ * ### E
+ * ### D
+ * ### R
+ * ### O
+ * ### N
+ * ### E
+ */
 /mob/living/simple_animal/drone/proc/liberate()
-	// F R E E D R O N E
 	laws = "1. You are a Free Drone."
 	to_chat(src, laws)
 
-/mob/living/simple_animal/drone/proc/update_drone_icon()
-	//Different icons for different hack states
-	if(!hacked)
-		if(visualAppearence == SCOUTDRONE_HACKED)
-			visualAppearence = SCOUTDRONE
-		else if(visualAppearence == REPAIRDRONE_HACKED)
-			visualAppearence = REPAIRDRONE
-		else if(visualAppearence == MAINTDRONE_HACKED)
-			visualAppearence = MAINTDRONE + "_[colour]"
-	else if(hacked)
-		if(visualAppearence == SCOUTDRONE)
-			visualAppearence = SCOUTDRONE_HACKED
-		else if(visualAppearence == REPAIRDRONE)
-			visualAppearence = REPAIRDRONE_HACKED
-		else if(visualAppearence == MAINTDRONE)
-			visualAppearence = MAINTDRONE_HACKED
-
-	icon_living = "[visualAppearence]"
-	icon_dead = "[visualAppearence]_dead"
+/**
+ * Changes the icon state to a hacked version
+ *
+ * See also
+ * * [/mob/living/simple_animal/drone/var/visualAppearance]
+ * * [MAINTDRONE]
+ * * [REPAIRDRONE]
+ * * [SCOUTDRONE]
+ */
+/mob/living/simple_animal/drone/proc/update_drone_icon_hacked() //this is hacked both ways
+	var/static/hacked_appearances = list(
+		SCOUTDRONE = SCOUTDRONE_HACKED,
+		REPAIRDRONE = REPAIRDRONE_HACKED,
+		MAINTDRONE = MAINTDRONE_HACKED
+	)
+	if(hacked)
+		icon_living = hacked_appearances[visualAppearance]
+	else if(visualAppearance == MAINTDRONE && colour)
+		icon_living = "[visualAppearance]_[colour]"
+	else
+		icon_living = visualAppearance
 	if(stat == DEAD)
 		icon_state = icon_dead
 	else

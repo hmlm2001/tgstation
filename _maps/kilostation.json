@@ -1,4 +1,5 @@
 {
+	"version": 1,
     "map_name": "Kilo Station",
     "map_path": "map_files/KiloStation",
     "map_file": "KiloStation.dmm",
@@ -8,5 +9,10 @@
 	    "ferry": "ferry_kilo",
 	    "cargo": "cargo_kilo",
 	    "whiteship": "whiteship_kilo"
-    }
+    },
+	"job_changes": {
+		"cook": {
+			"additional_cqc_areas": ["/area/service/bar/atrium"]
+		}
+	}
 }

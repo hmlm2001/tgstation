@@ -27,6 +27,11 @@
 	projectile_type = /obj/projectile/energy/floramut
 	select_name = "mutation"
 
+/obj/item/ammo_casing/energy/flora/revolution
+	projectile_type = /obj/projectile/energy/florarevolution
+	select_name = "revolution"
+	e_cost = 250
+
 /obj/item/ammo_casing/energy/temp
 	projectile_type = /obj/projectile/temp
 	select_name = "freeze"
@@ -64,11 +69,17 @@
 /obj/item/ammo_casing/energy/instakill/red
 	projectile_type = /obj/projectile/beam/instakill/red
 
-/obj/item/ammo_casing/energy/tesla_revolver
-	fire_sound = 'sound/magic/lightningbolt.ogg'
-	e_cost = 200
-	select_name = "stun"
-	projectile_type = /obj/projectile/energy/tesla/revolver
+/obj/item/ammo_casing/energy/instakill/green
+	projectile_type = /obj/projectile/beam/instakill/green
+
+/obj/item/ammo_casing/energy/instakill/yellow
+	projectile_type = /obj/projectile/beam/instakill/yellow
+
+/obj/item/ammo_casing/energy/tesla_cannon
+	fire_sound = 'sound/magic/lightningshock.ogg'
+	e_cost = 50
+	select_name = "shock"
+	projectile_type = /obj/projectile/energy/tesla_cannon
 
 /obj/item/ammo_casing/energy/shrink
 	projectile_type = /obj/projectile/beam/shrink

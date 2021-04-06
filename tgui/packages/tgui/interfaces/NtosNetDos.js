@@ -1,12 +1,22 @@
-import { Section, Button, LabeledList, Box, NoticeBox } from "../components";
-import { useBackend } from "../backend";
-import { createLogger } from "../logging";
-import { Fragment } from "inferno";
+import { useBackend } from '../backend';
+import { Box, Button, LabeledList, NoticeBox, Section } from '../components';
+import { NtosWindow } from '../layouts';
 
-const logger = createLogger('NetDos');
+export const NtosNetDos = (props, context) => {
+  return (
+    <NtosWindow
+      width={400}
+      height={250}
+      theme="syndicate">
+      <NtosWindow.Content>
+        <NtosNetDosContent />
+      </NtosWindow.Content>
+    </NtosWindow>
+  );
+};
 
-export const NtosNetDos = props => {
-  const { act, data } = useBackend(props);
+export const NtosNetDosContent = (props, context) => {
+  const { act, data } = useBackend(context);
 
   const {
     relays = [],
@@ -20,7 +30,7 @@ export const NtosNetDos = props => {
 
   if (error) {
     return (
-      <Fragment>
+      <>
         <NoticeBox>
           {error}
         </NoticeBox>
@@ -30,7 +40,7 @@ export const NtosNetDos = props => {
           textAlign="center"
           onClick={() => act('PRG_reset')}
         />
-      </Fragment>
+      </>
     );
   }
 

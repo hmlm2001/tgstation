@@ -2,31 +2,42 @@
 
 /obj/item/autosurgeon
 	name = "autosurgeon"
-	desc = "A device that automatically inserts an implant or organ into the user without the hassle of extensive surgery. It has a slot to insert implants/organs and a screwdriver slot for removing accidentally added items."
+	desc = "A device that automatically inserts an implant, skillchip or organ into the user without the hassle of extensive surgery. \
+		It has a screwdriver slot for removing accidentally added items."
 	icon = 'icons/obj/device.dmi'
 	icon_state = "autoimplanter"
-	item_state = "nothing"
+	inhand_icon_state = "nothing"
 	w_class = WEIGHT_CLASS_SMALL
-	var/obj/item/organ/storedorgan
-	var/organ_type = /obj/item/organ
-	var/uses = INFINITE
-	var/starting_organ
 
-/obj/item/autosurgeon/syndicate
-	name = "suspicious autosurgeon"
+	var/uses = INFINITE
+
+/obj/item/autosurgeon/attack_self_tk(mob/user)
+	return //stops TK fuckery
+
+/obj/item/autosurgeon/organ
+	name = "implant autosurgeon"
+	desc = "A device that automatically inserts an implant or organ into the user without the hassle of extensive surgery. \
+		It has a slot to insert implants or organs and a screwdriver slot for removing accidentally added items."
+
+	var/organ_type = /obj/item/organ
+	var/starting_organ
+	var/obj/item/organ/storedorgan
+
+/obj/item/autosurgeon/organ/syndicate
+	name = "suspicious implant autosurgeon"
 	icon_state = "syndicate_autoimplanter"
 
-/obj/item/autosurgeon/Initialize(mapload)
+/obj/item/autosurgeon/organ/Initialize(mapload)
 	. = ..()
 	if(starting_organ)
 		insert_organ(new starting_organ(src))
 
-/obj/item/autosurgeon/proc/insert_organ(var/obj/item/I)
+/obj/item/autosurgeon/organ/proc/insert_organ(obj/item/I)
 	storedorgan = I
 	I.forceMove(src)
 	name = "[initial(name)] ([storedorgan.name])"
 
-/obj/item/autosurgeon/attack_self(mob/user)//when the object it used...
+/obj/item/autosurgeon/organ/attack_self(mob/user)//when the object it used...
 	if(!uses)
 		to_chat(user, "<span class='alert'>[src] has already been used. The tools are dull and won't reactivate.</span>")
 		return
@@ -43,10 +54,7 @@
 	if(!uses)
 		desc = "[initial(desc)] Looks like it's been used up."
 
-/obj/item/autosurgeon/attack_self_tk(mob/user)
-	return //stops TK fuckery
-
-/obj/item/autosurgeon/attackby(obj/item/I, mob/user, params)
+/obj/item/autosurgeon/organ/attackby(obj/item/I, mob/user, params)
 	if(istype(I, organ_type))
 		if(storedorgan)
 			to_chat(user, "<span class='alert'>[src] already has an implant stored.</span>")
@@ -61,7 +69,7 @@
 	else
 		return ..()
 
-/obj/item/autosurgeon/screwdriver_act(mob/living/user, obj/item/I)
+/obj/item/autosurgeon/organ/screwdriver_act(mob/living/user, obj/item/I)
 	if(..())
 		return TRUE
 	if(!storedorgan)
@@ -81,24 +89,24 @@
 			desc = "[initial(desc)] Looks like it's been used up."
 	return TRUE
 
-/obj/item/autosurgeon/cmo
+/obj/item/autosurgeon/organ/cmo
 	desc = "A single use autosurgeon that contains a medical heads-up display augment. A screwdriver can be used to remove it, but implants can't be placed back in."
 	uses = 1
 	starting_organ = /obj/item/organ/cyberimp/eyes/hud/medical
 
-/obj/item/autosurgeon/syndicate/laser_arm
+/obj/item/autosurgeon/organ/syndicate/laser_arm
 	desc = "A single use autosurgeon that contains a combat arms-up laser augment. A screwdriver can be used to remove it, but implants can't be placed back in."
 	uses = 1
 	starting_organ = /obj/item/organ/cyberimp/arm/gun/laser
 
-/obj/item/autosurgeon/syndicate/thermal_eyes
+/obj/item/autosurgeon/organ/syndicate/thermal_eyes
 	starting_organ = /obj/item/organ/eyes/robotic/thermals
 
-/obj/item/autosurgeon/syndicate/xray_eyes
+/obj/item/autosurgeon/organ/syndicate/xray_eyes
 	starting_organ = /obj/item/organ/eyes/robotic/xray
 
-/obj/item/autosurgeon/syndicate/anti_stun
+/obj/item/autosurgeon/organ/syndicate/anti_stun
 	starting_organ = /obj/item/organ/cyberimp/brain/anti_stun
 
-/obj/item/autosurgeon/syndicate/reviver
+/obj/item/autosurgeon/organ/syndicate/reviver
 	starting_organ = /obj/item/organ/cyberimp/chest/reviver

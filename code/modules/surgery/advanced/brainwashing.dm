@@ -27,9 +27,8 @@
 
 /datum/surgery_step/brainwash
 	name = "brainwash"
-	implements = list(TOOL_HEMOSTAT = 85, TOOL_WIRECUTTER = 50, /obj/item/stack/packageWrap = 35, /obj/item/stack/cable_coil = 15)
+	implements = list(TOOL_HEMOSTAT = 85, TOOL_WIRECUTTER = 50, /obj/item/stack/package_wrap = 35, /obj/item/stack/cable_coil = 15)
 	time = 200
-	experience_given = MEDICAL_SKILL_ADVANCED
 	var/objective
 
 /datum/surgery_step/brainwash/preop(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
@@ -53,6 +52,8 @@
 	to_chat(target, "<span class='userdanger'>A new compulsion fills your mind... you feel forced to obey it!</span>")
 	brainwash(target, objective)
 	message_admins("[ADMIN_LOOKUPFLW(user)] surgically brainwashed [ADMIN_LOOKUPFLW(target)] with the objective '[objective]'.")
+	target.log_message("has been brainwashed with the objective '[objective]' by [key_name(user)] using brainwashing surgery.", LOG_ATTACK)
+	user.log_message("has brainwashed [key_name(target)] with the objective '[objective]' using brainwashing surgery.", LOG_ATTACK, log_globally = FALSE)
 	log_game("[key_name(user)] surgically brainwashed [key_name(target)] with the objective '[objective]'.")
 	return ..()
 

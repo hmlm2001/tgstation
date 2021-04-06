@@ -1,6 +1,7 @@
-parser: babel-eslint
+root: true
+parser: '@typescript-eslint/parser'
 parserOptions:
-  ecmaVersion: 2019
+  ecmaVersion: 2020
   sourceType: module
   ecmaFeatures:
     jsx: true
@@ -9,6 +10,7 @@ env:
   browser: true
   node: true
 plugins:
+  - radar
   - react
 settings:
   react:
@@ -17,7 +19,6 @@ rules:
 
   ## Possible Errors
   ## ----------------------------------------
-
   ## Enforce “for” loop update clause moving the counter in the right
   ## direction.
   # for-direction: error
@@ -112,7 +113,7 @@ rules:
   ## Require return statements to either always or never specify values
   # consistent-return: error
   ## Enforce consistent brace style for all control statements
-  curly: [error, all]
+  curly: [error, multi-line]
   ## Require default cases in switch statements
   # default-case: error
   ## Enforce default parameters to be last
@@ -277,7 +278,8 @@ rules:
   no-shadow-restricted-names: error
   ## Disallow the use of undeclared variables unless mentioned
   ## in /*global*/ comments
-  no-undef: error
+  ## NOTE: Pointless when TypeScript can check for this
+  # no-undef: error
   ## Disallow initializing variables to undefined
   no-undef-init: error
   ## Disallow the use of undefined as an identifier
@@ -305,7 +307,13 @@ rules:
   ## Enforce or disallow capitalization of the first letter of a comment
   # capitalized-comments: error
   ## Require or disallow trailing commas
-  comma-dangle: [error, always-multiline]
+  comma-dangle: [error, {
+    arrays: always-multiline,
+    objects: always-multiline,
+    imports: always-multiline,
+    exports: always-multiline,
+    functions: only-multiline, ## Optional on functions
+  }]
   ## Enforce consistent spacing before and after commas
   comma-spacing: [error, { before: false, after: true }]
   ## Enforce consistent comma style
@@ -366,6 +374,7 @@ rules:
     ignorePattern: '^(import\s.+\sfrom\s|.*require\()',
     ignoreUrls: true,
     ignoreRegExpLiterals: true,
+    ignoreStrings: true,
   }]
   ## Enforce a maximum number of lines per file
   # max-lines: error
@@ -382,7 +391,7 @@ rules:
   ## Enforce a particular style for multiline comments
   # multiline-comment-style: error
   ## Enforce newlines between operands of ternary expressions
-  multiline-ternary: [error, always-multiline]
+  # multiline-ternary: [error, always-multiline]
   ## Require constructor names to begin with a capital letter
   # new-cap: error
   ## Enforce or disallow parentheses when invoking a constructor with no
@@ -498,7 +507,7 @@ rules:
   ## Require braces around arrow function bodies
   # arrow-body-style: error
   ## Require parentheses around arrow function arguments
-  arrow-parens: [error, as-needed]
+  # arrow-parens: [error, as-needed]
   ## Enforce consistent spacing before and after the arrow in arrow functions
   arrow-spacing: [error, { before: true, after: true }]
   ## Require super() calls in constructors
@@ -574,7 +583,7 @@ rules:
   ## Rule enforces consistent usage of destructuring assignment in component
   # react/destructuring-assignment: [error, always, { ignoreClassFields: true }]
   ## Prevent missing displayName in a React component definition
-  react/display-name: error
+  # react/display-name: error
   ## Forbid certain props on Components
   # react/forbid-component-props: error
   ## Forbid certain props on DOM Nodes
@@ -625,7 +634,7 @@ rules:
   ## Prevent invalid characters from appearing in markup
   react/no-unescaped-entities: error
   ## Prevent usage of unknown DOM property (fixable)
-  react/no-unknown-property: error
+  # react/no-unknown-property: error
   ## Prevent usage of unsafe lifecycle methods
   react/no-unsafe: error
   ## Prevent definitions of unused prop types
@@ -675,11 +684,11 @@ rules:
   ## expressions.
   # react/jsx-child-element-spacing: error
   ## Validate closing bracket location in JSX (fixable)
-  react/jsx-closing-bracket-location: [error, {
-    ## NOTE: Not really sure about enforcing this one
-    selfClosing: false,
-    nonEmpty: after-props,
-  }]
+  # react/jsx-closing-bracket-location: [error, {
+  #   ## NOTE: Not really sure about enforcing this one
+  #   selfClosing: false,
+  #   nonEmpty: after-props,
+  # }]
   ## Validate closing tag location in JSX (fixable)
   react/jsx-closing-tag-location: error
   ## Enforce or disallow newlines inside of curly braces in JSX attributes and
@@ -705,7 +714,7 @@ rules:
   ## Validate JSX has key prop when in array or iterator
   react/jsx-key: error
   ## Validate JSX maximum depth
-  react/jsx-max-depth: [error, { max: 6 }] ## Generous
+  react/jsx-max-depth: [error, { max: 10 }] ## Generous
   ## Limit maximum of props on a single line in JSX (fixable)
   # react/jsx-max-props-per-line: error
   ## Prevent usage of .bind() and arrow functions in JSX props

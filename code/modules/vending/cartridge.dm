@@ -14,9 +14,10 @@
 					/obj/item/cartridge/captain = 3,
 					/obj/item/cartridge/quartermaster = 10)
 	refill_canister = /obj/item/vending_refill/cart
-	default_price = 250
-	extra_price = 500
+	default_price = PAYCHECK_COMMAND
+	extra_price = PAYCHECK_COMMAND * 2.5
 	payment_department = ACCOUNT_SRV
+	light_mask="cart-light-mask"
 
 /obj/item/vending_refill/cart
 	machine_name = "PTech"

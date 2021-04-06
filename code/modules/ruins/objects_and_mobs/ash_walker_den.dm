@@ -28,7 +28,7 @@
 
 /obj/structure/lavaland/ash_walker/deconstruct(disassembled)
 	new /obj/item/assembly/signaler/anomaly (get_step(loc, pick(GLOB.alldirs)))
-	new	/obj/effect/collapse(loc)
+	new /obj/effect/collapse(loc)
 	return ..()
 
 /obj/structure/lavaland/ash_walker/process()
@@ -80,7 +80,7 @@
 				else
 					SEND_SIGNAL(L, COMSIG_ADD_MOOD_EVENT, "oogabooga", /datum/mood_event/sacrifice_bad)
 
-/obj/structure/lavaland/ash_walker/proc/remake_walker(var/datum/mind/oldmind, var/oldname)
+/obj/structure/lavaland/ash_walker/proc/remake_walker(datum/mind/oldmind, oldname)
 	var/mob/living/carbon/human/M = new /mob/living/carbon/human(get_step(loc, pick(GLOB.alldirs)))
 	M.set_species(/datum/species/lizard/ashwalker)
 	M.real_name = oldname

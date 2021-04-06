@@ -13,6 +13,10 @@
 	px_y = -8
 	stam_damage_coeff = 1
 	max_stamina_damage = 100
+	wound_resistance = 5
+	disabled_wound_penalty = 25
+	scars_covered_by_clothes = FALSE
+	grind_results = null
 
 	var/mob/living/brain/brainmob = null //The current occupant.
 	var/obj/item/organ/brain/brain = null //The brain organ
@@ -33,6 +37,8 @@
 
 	var/lip_style = null
 	var/lip_color = "white"
+
+	var/stored_lipstick_trait
 
 
 /obj/item/bodypart/head/Destroy()
@@ -71,7 +77,7 @@
 		else if(brainmob?.health <= HEALTH_THRESHOLD_DEAD)
 			. += "<span class='info'>It's leaking some kind of... clear fluid? The brain inside must be in pretty bad shape.</span>"
 		else if(brainmob)
-			if(brainmob.get_ghost(FALSE, TRUE))
+			if(brainmob.key || brainmob.get_ghost(FALSE, TRUE))
 				. += "<span class='info'>Its muscles are twitching slightly... It seems to have some life still in it.</span>"
 			else
 				. += "<span class='info'>It's completely lifeless. Perhaps there'll be a chance for them later.</span>"
@@ -91,7 +97,7 @@
 
 
 /obj/item/bodypart/head/can_dismember(obj/item/I)
-	if(!((owner.stat == DEAD) || owner.InFullCritical()))
+	if(owner.stat < HARD_CRIT)
 		return FALSE
 	return ..()
 
@@ -136,6 +142,7 @@
 		hairstyle = "Bald"
 		facial_hairstyle = "Shaved"
 		lip_style = null
+		stored_lipstick_trait = null
 
 	else if(!animal_origin)
 		var/mob/living/carbon/human/H = C
@@ -147,6 +154,8 @@
 			if(S.hair_color)
 				if(S.hair_color == "mutcolor")
 					facial_hair_color = H.dna.features["mcolor"]
+				else if(hair_color == "fixedmutcolor")
+					facial_hair_color = "#[S.fixed_mut_color]"
 				else
 					facial_hair_color = S.hair_color
 			else
@@ -162,6 +171,8 @@
 			if(S.hair_color)
 				if(S.hair_color == "mutcolor")
 					hair_color = H.dna.features["mcolor"]
+				else if(hair_color == "fixedmutcolor")
+					hair_color = "#[S.fixed_mut_color]"
 				else
 					hair_color = S.hair_color
 			else
@@ -255,11 +266,6 @@
 	dismemberable = 0
 	max_damage = 500
 	animal_origin = ALIEN_BODYPART
-
-/obj/item/bodypart/head/devil
-	dismemberable = 0
-	max_damage = 5000
-	animal_origin = DEVIL_BODYPART
 
 /obj/item/bodypart/head/larva
 	icon = 'icons/mob/animal_parts.dmi'

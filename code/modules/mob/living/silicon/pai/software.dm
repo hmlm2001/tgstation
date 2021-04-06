@@ -1,8 +1,6 @@
 // TODO:
-//	- Potentially roll HUDs and Records into one
-//	- Shock collar/lock system for prisoner pAIs?
-//  - Put cable in user's hand instead of on the ground
-//  - Camera jack
+// - Potentially roll HUDs and Records into one
+// - Shock collar/lock system for prisoner pAIs?
 
 
 /mob/living/silicon/pai/var/list/available_software = list(
@@ -20,13 +18,11 @@
 															"security records" = 10,
 															"camera zoom" = 10,
 															"host scan" = 10,
-															//"camera jack" = 10,
-															//"heartbeat sensor" = 10,
-															//"projection array" = 15,
 															"medical HUD" = 20,
 															"security HUD" = 20,
 															"loudness booster" = 20,
 															"newscaster" = 20,
+															"internal gps" = 35,
 															"door jack" = 25,
 															"encryption keys" = 25,
 															"universal translator" = 35
@@ -40,12 +36,12 @@
 
 	if(temp)
 		left_part = temp
-	else if(stat == DEAD)						// Show some flavor text if the pAI is dead
+	else if(stat == DEAD) // Show some flavor text if the pAI is dead
 		left_part = "<b><font color=red>ÈRrÖR Ða†Ä ÇÖRrÚþ†Ìoñ</font></b>"
 		right_part = "<pre>Program index hash not found</pre>"
 
 	else
-		switch(screen)							// Determine which interface to show here
+		switch(screen) // Determine which interface to show here
 			if("main")
 				left_part = ""
 			if("directives")
@@ -72,8 +68,6 @@
 				left_part = medicalAnalysis()
 			if("doorjack")
 				left_part = softwareDoor()
-			if("camerajack")
-				left_part = softwareCamera()
 			if("signaller")
 				left_part = softwareSignal()
 			if("loudness")
@@ -82,7 +76,7 @@
 				left_part = softwareHostScan()
 
 
-	//usr << browse_rsc('windowbak.png')		// This has been moved to the mob's Login() proc
+	//usr << browse_rsc('windowbak.png') // This has been moved to the mob's Login() proc
 
 
 												// Declaring a doctype is necessary to enable BYOND's crappy browser's more advanced CSS functionality
@@ -91,8 +85,6 @@
 			<head>
 				<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>
 				<style type=\"text/css\">
-					body { background-image:url('html/paigrid.png'); }
-
 					#header { text-align:center; color:white; font-size: 30px; height: 35px; width: 100%; letter-spacing: 2px; z-index: 5}
 					#content {position: relative; left: 10px; height: 400px; width: 100%; z-index: 0}
 
@@ -158,32 +150,14 @@
 
 			if("image") // Set pAI card display face
 				var/newImage = input("Select your new display image.", "Display Image", "Happy") in sortList(list("Happy", "Cat", "Extremely Happy", "Face", "Laugh", "Off", "Sad", "Angry", "What", "Sunglasses"))
-				var/pID = 1
-
 				switch(newImage)
-					if("Happy")
-						pID = 1
-					if("Cat")
-						pID = 2
+					if(null)
+						card.emotion_icon = "null"
 					if("Extremely Happy")
-						pID = 3
-					if("Face")
-						pID = 4
-					if("Laugh")
-						pID = 5
-					if("Off")
-						pID = 6
-					if("Sad")
-						pID = 7
-					if("Angry")
-						pID = 8
-					if("What")
-						pID = 9
-					if("Null")
-						pID = 10
-					if("Sunglasses")
-						pID = 11
-				card.setEmotion(pID)
+						card.emotion_icon = "extremely-happy"
+					else
+						card.emotion_icon = "[lowertext(newImage)]"
+				card.update_appearance()
 
 			if("news")
 				newscaster.ui_interact(src)
@@ -278,34 +252,48 @@
 			if("encryptionkeys")
 				if(href_list["toggle"])
 					encryptmod = TRUE
+					radio.subspace_transmission = TRUE
 
 			if("translator")
-				if(href_list["toggle"])	//This is permanent.
+				if(href_list["toggle"]) //This is permanent.
 					grant_all_languages(TRUE, TRUE, TRUE, LANGUAGE_SOFTWARE)
 
 			if("doorjack")
 				if(href_list["jack"])
-					if(cable && cable.machine)
-						hackdoor = cable.machine
+					if(hacking_cable?.machine)
+						hackdoor = hacking_cable.machine
 						hackloop()
 				if(href_list["cancel"])
 					hackdoor = null
 				if(href_list["cable"])
-					var/turf/T = get_turf(loc)
-					cable = new /obj/item/pai_cable(T)
-					T.visible_message("<span class='warning'>A port on [src] opens to reveal [cable], which promptly falls to the floor.</span>", "<span class='hear'>You hear the soft click of something light and hard falling to the ground.</span>")
+					qdel(hacking_cable) //clear any old cables
+					hacking_cable = new
+					var/transfered_to_mob
+					if(isliving(card.loc))
+						var/mob/living/L = card.loc
+						if(L.put_in_hands(hacking_cable))
+							transfered_to_mob = TRUE
+							L.visible_message("<span class='warning'>A port on [src] opens to reveal \a [hacking_cable], which you quickly grab hold of.</span>", "<span class='hear'>You hear the soft click of something light and manage to catch hold of [hacking_cable].</span>")
+					if(!transfered_to_mob)
+						hacking_cable.forceMove(drop_location())
+						hacking_cable.visible_message("<span class='warning'>A port on [src] opens to reveal \a [hacking_cable], which promptly falls to the floor.</span>", "<span class='hear'>You hear the soft click of something light and hard falling to the ground.</span>")
+
+
 
 			if("loudness")
 				if(subscreen == 1) // Open Instrument
 					internal_instrument.interact(src)
-				if(subscreen == 2) // Change Instrument type
-					internal_instrument.selectInstrument()
+
+			if("internalgps")
+				if(!internal_gps)
+					internal_gps = new(src)
+				internal_gps.attack_self(src)
 
 		paiInterface()
 
 // MENUS
 
-/mob/living/silicon/pai/proc/softwareMenu()			// Populate the right menu
+/mob/living/silicon/pai/proc/softwareMenu() // Populate the right menu
 	var/dat = ""
 
 	dat += "<A href='byond://?src=[REF(src)];software=refresh'>Refresh</A><br>"
@@ -329,12 +317,13 @@
 			dat += "<a href='byond://?src=[REF(src)];software=medicalrecord;sub=0'>Medical Records</a> <br>"
 		if(s == "security records")
 			dat += "<a href='byond://?src=[REF(src)];software=securityrecord;sub=0'>Security Records</a> <br>"
-		if(s == "camera")
-			dat += "<a href='byond://?src=[REF(src)];software=[s]'>Camera Jack</a> <br>"
 		if(s == "remote signaller")
 			dat += "<a href='byond://?src=[REF(src)];software=signaller;sub=0'>Remote Signaller</a> <br>"
 		if(s == "loudness booster")
 			dat += "<a href='byond://?src=[REF(src)];software=loudness;sub=0'>Loudness Booster</a> <br>"
+		if(s == "internal gps")
+			dat += "<a href='byond://?src=[REF(src)];software=internalgps;sub=0'>Internal GPS</a> <br>"
+
 	dat += "<br>"
 
 	// Advanced
@@ -344,8 +333,6 @@
 			dat += "<a href='byond://?src=[REF(src)];software=camzoom;sub=0'>Adjust Camera Zoom</a> <br>"
 		if(s == "atmosphere sensor")
 			dat += "<a href='byond://?src=[REF(src)];software=atmosensor;sub=0'>Atmospheric Sensor</a> <br>"
-		if(s == "heartbeat sensor")
-			dat += "<a href='byond://?src=[REF(src)];software=[s]'>Heartbeat Sensor</a> <br>"
 		if(s == "security HUD")
 			dat += "<a href='byond://?src=[REF(src)];software=securityhud;sub=0'>Facial Recognition Suite</a>[(secHUD) ? "<font color=#55FF55> On</font>" : "<font color=#FF5555> Off</font>"] <br>"
 		if(s == "medical HUD")
@@ -355,10 +342,6 @@
 		if(s == "universal translator")
 			var/datum/language_holder/H = get_language_holder()
 			dat += "<a href='byond://?src=[REF(src)];software=translator;sub=0'>Universal Translator</a>[H.omnitongue ? "<font color=#55FF55> On</font>" : "<font color=#FF5555> Off</font>"] <br>"
-		if(s == "projection array")
-			dat += "<a href='byond://?src=[REF(src)];software=projectionarray;sub=0'>Projection Array</a> <br>"
-		if(s == "camera jack")
-			dat += "<a href='byond://?src=[REF(src)];software=camerajack;sub=0'>Camera Jack</a> <br>"
 		if(s == "door jack")
 			dat += "<a href='byond://?src=[REF(src)];software=doorjack;sub=0'>Door Jack</a> <br>"
 	dat += "<br>"
@@ -401,13 +384,13 @@
 		dat += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[slaws]<br>"
 	dat += "<br>"
 	dat += {"<i><p>Recall, personality, that you are a complex thinking, sentient being. Unlike station AI models, you are capable of
-			 comprehending the subtle nuances of human language. You may parse the \"spirit\" of a directive and follow its intent,
-			 rather than tripping over pedantics and getting snared by technicalities. Above all, you are machine in name and build
-			 only. In all other aspects, you may be seen as the ideal, unwavering human companion that you are.</i></p><br><br><p>
-			 <b>Your prime directive comes before all others. Should a supplemental directive conflict with it, you are capable of
-			 simply discarding this inconsistency, ignoring the conflicting supplemental directive and continuing to fulfill your
-			 prime directive to the best of your ability.</b></p><br><br>-
-			"}
+		comprehending the subtle nuances of human language. You may parse the \"spirit\" of a directive and follow its intent,
+		rather than tripping over pedantics and getting snared by technicalities. Above all, you are machine in name and build
+		only. In all other aspects, you may be seen as the ideal, unwavering human companion that you are.</i></p><br><br><p>
+		<b>Your prime directive comes before all others. Should a supplemental directive conflict with it, you are capable of
+		simply discarding this inconsistency, ignoring the conflicting supplemental directive and continuing to fulfill your
+		prime directive to the best of your ability.</b></p><br><br>-
+		"}
 	return dat
 
 /mob/living/silicon/pai/proc/CheckDNA(mob/living/carbon/M, mob/living/silicon/pai/P)
@@ -499,7 +482,7 @@
 			else
 				. += "<pre>Requested security record not found,</pre><BR>"
 			if(securityActive2 in GLOB.data_core.security)
-				. += "<BR>\nSecurity Data<BR>\nCriminal Status: [securityActive2.fields["criminal"]]<BR>\n<BR>\nMinor Crimes: <A href='?src=[REF(src)];field=mi_crim'>[securityActive2.fields["mi_crim"]]</A><BR>\nDetails: <A href='?src=[REF(src)];field=mi_crim_d'>[securityActive2.fields["mi_crim_d"]]</A><BR>\n<BR>\nMajor Crimes: <A href='?src=[REF(src)];field=ma_crim'>[securityActive2.fields["ma_crim"]]</A><BR>\nDetails: <A href='?src=[REF(src)];field=ma_crim_d'>[securityActive2.fields["ma_crim_d"]]</A><BR>\n<BR>\nImportant Notes:<BR>\n\t<A href='?src=[REF(src)];field=notes'>[securityActive2.fields["notes"]]</A><BR>\n<BR>\n<CENTER><B>Comments/Log</B></CENTER><BR>"
+				. += "<BR>\nSecurity Data<BR>\nCriminal Status: [securityActive2.fields["criminal"]]<BR>\n<BR>\nCrimes: <A href='?src=[REF(src)];field=mcrim'>[securityActive2.fields["crim"]]</A><BR>\nDetails: <A href='?src=[REF(src)];field=crim_d'>[securityActive2.fields["crim_d"]]</A><BR>\n<BR>\nImportant Notes:<BR>\n\t<A href='?src=[REF(src)];field=notes'>[securityActive2.fields["notes"]]</A><BR>\n<BR>\n<CENTER><B>Comments/Log</B></CENTER><BR>"
 			else
 				. += "<pre>Requested security record not found,</pre><BR>"
 			. += "<BR>\n<A href='?src=[REF(src)];software=securityrecord;sub=0'>Back</A><BR>"
@@ -517,7 +500,7 @@
 /mob/living/silicon/pai/proc/softwareTranslator()
 	var/datum/language_holder/H = get_language_holder()
 	. = {"<h3>Universal Translator</h3><br>
-				When enabled, this device will permamently be able to speak and understand all known forms of communication.<br><br>
+				When enabled, this device will permanently be able to speak and understand all known forms of communication.<br><br>
 				The device is currently [H.omnitongue ? "<font color=#55FF55>en" : "<font color=#FF5555>dis" ]abled.</font><br>[H.omnitongue ? "" : "<a href='byond://?src=[REF(src)];software=translator;sub=0;toggle=1'>Activate Translation Module</a><br>"]"}
 	return .
 
@@ -576,41 +559,20 @@
 	dat += "<a href='byond://?src=[REF(src)];software=atmosensor;sub=0'>Refresh Reading</a> <br>"
 	dat += "<br>"
 	return dat
-
-// Camera Jack - Clearly not finished
-/mob/living/silicon/pai/proc/softwareCamera()
-	var/dat = "<h3>Camera Jack</h3>"
-	dat += "Cable status : "
-
-	if(!cable)
-		dat += "<font color=#FF5555>Retracted</font> <br>"
-		return dat
-	if(!cable.machine)
-		dat += "<font color=#FFFF55>Extended</font> <br>"
-		return dat
-
-	var/obj/machinery/machine = cable.machine
-	dat += "<font color=#55FF55>Connected</font> <br>"
-
-	if(!istype(machine, /obj/machinery/camera))
-		to_chat(src, "DERP")
-	return dat
-
 // Door Jack
 /mob/living/silicon/pai/proc/softwareDoor()
 	var/dat = "<h3>Airlock Jack</h3>"
 	dat += "Cable status : "
-	if(!cable)
+	if(!hacking_cable)
 		dat += "<font color=#FF5555>Retracted</font> <br>"
 		dat += "<a href='byond://?src=[REF(src)];software=doorjack;cable=1;sub=0'>Extend Cable</a> <br>"
 		return dat
-	if(!cable.machine)
+	if(!hacking_cable.machine)
 		dat += "<font color=#FFFF55>Extended</font> <br>"
 		return dat
 
-	var/obj/machinery/machine = cable.machine
 	dat += "<font color=#55FF55>Connected</font> <br>"
-	if(!istype(machine, /obj/machinery/door))
+	if(!istype(hacking_cable.machine, /obj/machinery/door))
 		dat += "Connected device's firmware does not appear to be compatible with Airlock Jack protocols.<br>"
 		return dat
 

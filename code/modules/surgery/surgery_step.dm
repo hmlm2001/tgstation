@@ -1,16 +1,14 @@
 /datum/surgery_step
 	var/name
-	var/list/implements = list()	//format is path = probability of success. alternatively
-	var/implement_type = null		//the current type of implement used. This has to be stored, as the actual typepath of the tool may not match the list type.
-	var/accept_hand = FALSE				//does the surgery step require an open hand? If true, ignores implements. Compatible with accept_any_item.
-	var/accept_any_item = FALSE			//does the surgery step accept any item? If true, ignores implements. Compatible with require_hand.
-	var/time = 10					//how long does the step take?
-	var/repeatable = FALSE				//can this step be repeated? Make shure it isn't last step, or it used in surgery with `can_cancel = 1`. Or surgion will be stuck in the loop
+	var/list/implements = list() //format is path = probability of success. alternatively
+	var/implement_type = null //the current type of implement used. This has to be stored, as the actual typepath of the tool may not match the list type.
+	var/accept_hand = FALSE //does the surgery step require an open hand? If true, ignores implements. Compatible with accept_any_item.
+	var/accept_any_item = FALSE //does the surgery step accept any item? If true, ignores implements. Compatible with require_hand.
+	var/time = 10 //how long does the step take?
+	var/repeatable = FALSE //can this step be repeated? Make shure it isn't last step, or it used in surgery with `can_cancel = 1`. Or surgion will be stuck in the loop
 	var/list/chems_needed = list()  //list of chems needed to complete the step. Even on success, the step will have no effect if there aren't the chems required in the mob.
 	var/require_all_chems = TRUE    //any on the list or all on the list?
 	var/silicons_obey_prob = FALSE
-	/// The amount of a experience given for successfully completing the step.
-	var/experience_given = MEDICAL_SKILL_EASY
 
 /datum/surgery_step/proc/try_op(mob/user, mob/living/target, target_zone, obj/item/tool, datum/surgery/surgery, try_to_fail = FALSE)
 	var/success = FALSE
@@ -45,7 +43,7 @@
 				initiate(user, target, target_zone, tool, surgery, try_to_fail)
 			else
 				to_chat(user, "<span class='warning'>You need to expose [target]'s [parse_zone(target_zone)] to perform surgery on it!</span>")
-			return TRUE	//returns TRUE so we don't stab the guy in the dick or wherever.
+			return TRUE //returns TRUE so we don't stab the guy in the dick or wherever.
 
 	if(repeatable)
 		var/datum/surgery_step/next_step = surgery.get_surgery_next_step()
@@ -60,7 +58,10 @@
 
 #define SURGERY_SLOWDOWN_CAP_MULTIPLIER 2 //increase to make surgery slower but fail less, and decrease to make surgery faster but fail more
 
-/datum/surgery_step/proc/initiate(mob/user, mob/living/target, target_zone, obj/item/tool, datum/surgery/surgery, try_to_fail = FALSE)
+/datum/surgery_step/proc/initiate(mob/living/user, mob/living/target, target_zone, obj/item/tool, datum/surgery/surgery, try_to_fail = FALSE)
+	// Only followers of Asclepius have the ability to use Healing Touch and perform miracle feats of surgery.
+	// Prevents people from performing multiple simultaneous surgeries unless they're holding a Rod of Asclepius.
+
 	surgery.step_in_progress = TRUE
 	var/speed_mod = 1
 	var/fail_prob = 0//100 - fail_prob = success_prob
@@ -74,11 +75,11 @@
 		speed_mod = tool.toolspeed
 
 	var/implement_speed_mod = 1
-	if(implement_type)	//this means it isn't a require hand or any item step.
+	if(implement_type) //this means it isn't a require hand or any item step.
 		implement_speed_mod = implements[implement_type] / 100.0
 
-	speed_mod /= (get_location_modifier(target) * (1 + surgery.speed_modifier) * implement_speed_mod)
-	var/modded_time = time * speed_mod * user.mind.get_skill_modifier(/datum/skill/medical, SKILL_SPEED_MODIFIER)
+	speed_mod /= (get_location_modifier(target) * (1 + surgery.speed_modifier) * implement_speed_mod) * target.mob_surgery_speed_mod
+	var/modded_time = time * speed_mod
 
 
 	fail_prob = min(max(0, modded_time - (time * SURGERY_SLOWDOWN_CAP_MULTIPLIER)),99)//if modded_time > time * modifier, then fail_prob = modded_time - time*modifier. starts at 0, caps at 99
@@ -89,7 +90,7 @@
 
 	var/was_sleeping = (target.stat != DEAD && target.IsSleeping())
 
-	if(do_after(user, modded_time, target = target))
+	if(do_after(user, modded_time, target = target, interaction_key = user.has_status_effect(STATUS_EFFECT_HIPPOCRATIC_OATH) ? target : DOAFTER_SOURCE_SURGERY)) //If we have the hippocratic oath, we can perform one surgery on each target, otherwise we can only do one surgery in total.
 
 		var/chem_check_result = chem_check(target)
 		if((prob(100-fail_prob) || (iscyborg(user) && !silicons_obey_prob)) && chem_check_result && !try_to_fail)
@@ -122,10 +123,9 @@
 		display_results(user, target, "<span class='notice'>You succeed.</span>",
 				"<span class='notice'>[user] succeeds!</span>",
 				"<span class='notice'>[user] finishes.</span>")
-	user?.mind.adjust_experience(/datum/skill/medical, round(experience_given))
 	return TRUE
 
-/datum/surgery_step/proc/failure(mob/user, mob/living/target, target_zone, obj/item/tool, datum/surgery/surgery, var/fail_prob = 0)
+/datum/surgery_step/proc/failure(mob/user, mob/living/target, target_zone, obj/item/tool, datum/surgery/surgery, fail_prob = 0)
 	var/screwedmessage = ""
 	switch(fail_prob)
 		if(0 to 24)
@@ -169,10 +169,9 @@
 			chems += chemname
 	return english_list(chems, and_text = require_all_chems ? " and " : " or ")
 
-//Replaces visible_message during operations so only people looking over the surgeon can tell what they're doing, allowing for shenanigans.
-/datum/surgery_step/proc/display_results(mob/user, mob/living/carbon/target, self_message, detailed_message, vague_message, target_detailed = FALSE)
-	var/list/detailed_mobs = get_hearers_in_view(1, user) //Only the surgeon and people looking over his shoulder can see the operation clearly
-	if(!target_detailed)
-		detailed_mobs -= target //The patient can't see well what's going on, unless it's something like getting cut
+//Replaces visible_message during operations so only people looking over the surgeon can see them.
+/datum/surgery_step/proc/display_results(mob/user, mob/living/target, self_message, detailed_message, vague_message, target_detailed = FALSE)
 	user.visible_message(detailed_message, self_message, vision_distance = 1, ignored_mobs = target_detailed ? null : target)
-	user.visible_message(vague_message, "", ignored_mobs = detailed_mobs)
+	if(!target_detailed)
+		var/you_feel = pick("a brief pain", "your body tense up", "an unnerving sensation")
+		target.show_message(vague_message, MSG_VISUAL, "<span class='notice'>You feel [you_feel] as you are operated on.</span>")

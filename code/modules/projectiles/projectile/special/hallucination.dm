@@ -23,7 +23,7 @@
 
 /obj/projectile/hallucination/fire()
 	..()
-	fake_icon = image('icons/obj/projectiles.dmi', src, hal_icon_state, ABOVE_MOB_LAYER)
+	fake_icon = image('icons/obj/guns/projectiles.dmi', src, hal_icon_state, ABOVE_MOB_LAYER)
 	if(hal_target.client)
 		hal_target.client.images += fake_icon
 
@@ -66,7 +66,7 @@
 		return
 
 	var/splatter_icon_state
-	if(set_dir in GLOB.diagonals)
+	if(ISDIAGONALDIR(set_dir))
 		splatter_icon_state = "splatter[pick(1, 2, 6)]"
 	else
 		splatter_icon_state = "splatter[pick(3, 4, 5)]"

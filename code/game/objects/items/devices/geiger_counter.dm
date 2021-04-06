@@ -4,23 +4,21 @@
 #define RAD_LEVEL_VERY_HIGH 800
 #define RAD_LEVEL_CRITICAL 1500
 
-#define RAD_MEASURE_SMOOTHING 5
-
-#define RAD_GRACE_PERIOD 2
-
 /obj/item/geiger_counter //DISCLAIMER: I know nothing about how real-life Geiger counters work. This will not be realistic. ~Xhuis
 	name = "\improper Geiger counter"
 	desc = "A handheld device used for detecting and measuring radiation pulses."
 	icon = 'icons/obj/device.dmi'
 	icon_state = "geiger_off"
-	item_state = "multitool"
+	inhand_icon_state = "multitool"
+	worn_icon_state = "geiger_counter"
 	lefthand_file = 'icons/mob/inhands/equipment/tools_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/tools_righthand.dmi'
 	w_class = WEIGHT_CLASS_SMALL
 	slot_flags = ITEM_SLOT_BELT
+	item_flags = NOBLUDGEON
 	custom_materials = list(/datum/material/iron = 150, /datum/material/glass = 150)
 
-	var/grace = RAD_GRACE_PERIOD
+	var/grace = RAD_GEIGER_GRACE_PERIOD
 	var/datum/looping_sound/geiger/soundloop
 
 	var/scanning = FALSE
@@ -38,29 +36,27 @@
 
 /obj/item/geiger_counter/Destroy()
 	STOP_PROCESSING(SSobj, src)
+	QDEL_NULL(soundloop)
+	
 	return ..()
 
-/obj/item/geiger_counter/process()
-	update_icon()
-	update_sound()
+/obj/item/geiger_counter/process(delta_time)
+	if(scanning)
+		radiation_count = LPFILTER(radiation_count, current_tick_amount, delta_time, RAD_GEIGER_RC)
 
-	if(!scanning)
-		current_tick_amount = 0
-		return
+		if(current_tick_amount)
+			grace = RAD_GEIGER_GRACE_PERIOD
+			last_tick_amount = current_tick_amount
 
-	radiation_count -= radiation_count/RAD_MEASURE_SMOOTHING
-	radiation_count += current_tick_amount/RAD_MEASURE_SMOOTHING
-
-	if(current_tick_amount)
-		grace = RAD_GRACE_PERIOD
-		last_tick_amount = current_tick_amount
-
-	else if(!(obj_flags & EMAGGED))
-		grace--
-		if(grace <= 0)
-			radiation_count = 0
+		else if(!(obj_flags & EMAGGED))
+			grace -= delta_time
+			if(grace <= 0)
+				radiation_count = 0
 
 	current_tick_amount = 0
+
+	update_appearance()
+	update_sound()
 
 /obj/item/geiger_counter/examine(mob/user)
 	. = ..()
@@ -89,22 +85,25 @@
 /obj/item/geiger_counter/update_icon_state()
 	if(!scanning)
 		icon_state = "geiger_off"
-	else if(obj_flags & EMAGGED)
+		return ..()
+	if(obj_flags & EMAGGED)
 		icon_state = "geiger_on_emag"
-	else
-		switch(radiation_count)
-			if(-INFINITY to RAD_LEVEL_NORMAL)
-				icon_state = "geiger_on_1"
-			if(RAD_LEVEL_NORMAL + 1 to RAD_LEVEL_MODERATE)
-				icon_state = "geiger_on_2"
-			if(RAD_LEVEL_MODERATE + 1 to RAD_LEVEL_HIGH)
-				icon_state = "geiger_on_3"
-			if(RAD_LEVEL_HIGH + 1 to RAD_LEVEL_VERY_HIGH)
-				icon_state = "geiger_on_4"
-			if(RAD_LEVEL_VERY_HIGH + 1 to RAD_LEVEL_CRITICAL)
-				icon_state = "geiger_on_4"
-			if(RAD_LEVEL_CRITICAL + 1 to INFINITY)
-				icon_state = "geiger_on_5"
+		return ..()
+
+	switch(radiation_count)
+		if(-INFINITY to RAD_LEVEL_NORMAL)
+			icon_state = "geiger_on_1"
+		if(RAD_LEVEL_NORMAL + 1 to RAD_LEVEL_MODERATE)
+			icon_state = "geiger_on_2"
+		if(RAD_LEVEL_MODERATE + 1 to RAD_LEVEL_HIGH)
+			icon_state = "geiger_on_3"
+		if(RAD_LEVEL_HIGH + 1 to RAD_LEVEL_VERY_HIGH)
+			icon_state = "geiger_on_4"
+		if(RAD_LEVEL_VERY_HIGH + 1 to RAD_LEVEL_CRITICAL)
+			icon_state = "geiger_on_4"
+		if(RAD_LEVEL_CRITICAL + 1 to INFINITY)
+			icon_state = "geiger_on_5"
+	return ..()
 
 /obj/item/geiger_counter/proc/update_sound()
 	var/datum/looping_sound/geiger/loop = soundloop
@@ -122,16 +121,16 @@
 	if(amount <= RAD_BACKGROUND_RADIATION || !scanning)
 		return
 	current_tick_amount += amount
-	update_icon()
+	update_appearance()
 
 /obj/item/geiger_counter/attack_self(mob/user)
 	scanning = !scanning
-	update_icon()
+	update_appearance()
 	to_chat(user, "<span class='notice'>[icon2html(src, user)] You switch [scanning ? "on" : "off"] [src].</span>")
 
-/obj/item/geiger_counter/afterattack(atom/target, mob/user)
+/obj/item/geiger_counter/afterattack(atom/target, mob/living/user, params)
 	. = ..()
-	if(user.a_intent == INTENT_HELP)
+	if(!user.combat_mode)
 		if(!(obj_flags & EMAGGED))
 			user.visible_message("<span class='notice'>[user] scans [target] with [src].</span>", "<span class='notice'>You scan [target]'s radiation levels with [src]...</span>")
 			addtimer(CALLBACK(src, .proc/scan, target, user), 20, TIMER_UNIQUE) // Let's not have spamming GetAllContents
@@ -142,14 +141,7 @@
 		return TRUE
 
 /obj/item/geiger_counter/proc/scan(atom/A, mob/user)
-	var/rad_strength = 0
-	for(var/i in get_rad_contents(A)) // Yes it's intentional that you can't detect radioactive things under rad protection. Gives traitors a way to hide their glowing green rocks.
-		var/atom/thing = i
-		if(!thing)
-			continue
-		var/datum/component/radioactive/radiation = thing.GetComponent(/datum/component/radioactive)
-		if(radiation)
-			rad_strength += radiation.strength
+	var/rad_strength = get_rad_contamination(A)
 
 	if(isliving(A))
 		var/mob/living/M = A
@@ -167,15 +159,15 @@
 	if(I.tool_behaviour == TOOL_SCREWDRIVER && (obj_flags & EMAGGED))
 		if(scanning)
 			to_chat(user, "<span class='warning'>Turn off [src] before you perform this action!</span>")
-			return 0
+			return FALSE
 		user.visible_message("<span class='notice'>[user] unscrews [src]'s maintenance panel and begins fiddling with its innards...</span>", "<span class='notice'>You begin resetting [src]...</span>")
 		if(!I.use_tool(src, user, 40, volume=50))
-			return 0
+			return FALSE
 		user.visible_message("<span class='notice'>[user] refastens [src]'s maintenance panel!</span>", "<span class='notice'>You reset [src] to its factory settings!</span>")
 		obj_flags &= ~EMAGGED
 		radiation_count = 0
-		update_icon()
-		return 1
+		update_appearance()
+		return TRUE
 	else
 		return ..()
 
@@ -184,17 +176,17 @@
 		return ..()
 	if(!scanning)
 		to_chat(usr, "<span class='warning'>[src] must be on to reset its radiation level!</span>")
-		return 0
+		return
 	radiation_count = 0
 	to_chat(usr, "<span class='notice'>You flush [src]'s radiation counts, resetting it to normal.</span>")
-	update_icon()
+	update_appearance()
 
 /obj/item/geiger_counter/emag_act(mob/user)
 	if(obj_flags & EMAGGED)
 		return
 	if(scanning)
 		to_chat(user, "<span class='warning'>Turn off [src] before you perform this action!</span>")
-		return 0
+		return
 	to_chat(user, "<span class='warning'>You override [src]'s radiation storing protocols. It will now generate small doses of radiation, and stored rads are now projected into creatures you scan.</span>")
 	obj_flags |= EMAGGED
 
@@ -207,7 +199,7 @@
 	if(!scanning)
 		return
 	scanning = FALSE
-	update_icon()
+	update_appearance()
 
 /obj/item/geiger_counter/cyborg/equipped(mob/user)
 	. = ..()

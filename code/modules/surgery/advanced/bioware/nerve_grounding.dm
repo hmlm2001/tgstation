@@ -15,7 +15,6 @@
 	name = "ground nerves"
 	accept_hand = TRUE
 	time = 155
-	experience_given = MEDICAL_SKILL_ADVANCED
 
 /datum/surgery_step/ground_nerves/preop(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	display_results(user, target, "<span class='notice'>You start rerouting [target]'s nerves.</span>",
@@ -36,8 +35,8 @@
 
 /datum/bioware/grounded_nerves/on_gain()
 	..()
-	ADD_TRAIT(owner, TRAIT_SHOCKIMMUNE, "grounded_nerves")
+	ADD_TRAIT(owner, TRAIT_SHOCKIMMUNE, EXPERIMENTAL_SURGERY_TRAIT)
 
 /datum/bioware/grounded_nerves/on_lose()
 	..()
-	REMOVE_TRAIT(owner, TRAIT_SHOCKIMMUNE, "grounded_nerves")
+	REMOVE_TRAIT(owner, TRAIT_SHOCKIMMUNE, EXPERIMENTAL_SURGERY_TRAIT)

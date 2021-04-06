@@ -83,7 +83,7 @@
 
 
 /datum/duel/proc/back_to_prep()
-	message_duelists("<span class='notice'>Positions invalid. Please move to valid positions [required_distance] steps aways from each other to continue.</span>")
+	message_duelists("<span class='notice'>Positions invalid. Please move to valid positions [required_distance] steps away from each other to continue.</span>")
 	state = DUEL_PREPARATION
 	confirmations.Cut()
 	countdown_step = countdown_length
@@ -124,7 +124,7 @@
 	if(get_dist(A,B) != required_distance)
 		return FALSE
 	for(var/turf/T in getline(get_turf(A),get_turf(B)))
-		if(is_blocked_turf(T,TRUE))
+		if(T.is_blocked_turf(TRUE))
 			return FALSE
 	return TRUE
 
@@ -132,7 +132,7 @@
 	name = "dueling pistol"
 	desc = "High-tech dueling pistol. Launches chaff and projectile according to preset settings."
 	icon_state = "dueling_pistol"
-	item_state = "gun"
+	inhand_icon_state = "gun"
 	ammo_x_offset = 2
 	w_class = WEIGHT_CLASS_SMALL
 	ammo_type = list(/obj/item/ammo_casing/energy/duel)
@@ -173,7 +173,7 @@
 		if(DUEL_SETTING_C)
 			setting = DUEL_SETTING_A
 	to_chat(user,"<span class='notice'>You switch [src] setting to [setting] mode.</span>")
-	update_icon()
+	update_appearance()
 
 /obj/item/gun/energy/dueling/update_overlays()
 	. = ..()
@@ -248,15 +248,15 @@
 
 /obj/item/ammo_casing/energy/duel/ready_proj(atom/target, mob/living/user, quiet, zone_override)
 	. = ..()
-	var/obj/projectile/energy/duel/D = BB
+	var/obj/projectile/energy/duel/D = loaded_projectile
 	D.setting = setting
-	D.update_icon()
+	D.update_appearance()
 
 /obj/item/ammo_casing/energy/duel/fire_casing(atom/target, mob/living/user, params, distro, quiet, zone_override, spread, atom/fired_from)
 	. = ..()
 	var/obj/effect/temp_visual/dueling_chaff/C = new(get_turf(user))
 	C.setting = setting
-	C.update_icon()
+	C.update_appearance()
 
 //Projectile
 
@@ -306,7 +306,7 @@
 	name = "dueling pistol case"
 	desc = "Let's solve this like gentlespacemen."
 	icon_state = "medalbox+l"
-	item_state = "syringe_kit"
+	inhand_icon_state = "syringe_kit"
 	lefthand_file = 'icons/mob/inhands/equipment/medical_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/medical_righthand.dmi'
 	w_class = WEIGHT_CLASS_NORMAL
@@ -314,6 +314,7 @@
 	icon_locked = "medalbox+l"
 	icon_closed = "medalbox"
 	icon_broken = "medalbox+b"
+	base_icon_state = "medalbox"
 
 /obj/item/storage/lockbox/dueling/ComponentInitialize()
 	. = ..()
@@ -323,15 +324,14 @@
 	STR.set_holdable(list(/obj/item/gun/energy/dueling))
 
 /obj/item/storage/lockbox/dueling/update_icon_state()
-	var/locked = SEND_SIGNAL(src, COMSIG_IS_STORAGE_LOCKED)
-	if(locked)
-		icon_state = "medalbox+l"
-	else
-		icon_state = "medalbox"
-		if(open)
-			icon_state += "open"
-		if(broken)
-			icon_state += "+b"
+	if(SEND_SIGNAL(src, COMSIG_IS_STORAGE_LOCKED))
+		icon_state = icon_locked
+		return ..()
+	if(broken)
+		icon_state = icon_broken
+		return ..()
+	icon_state = open ? "[base_icon_state]open" : icon_closed
+	return ..()
 
 /obj/item/storage/lockbox/dueling/PopulateContents()
 	. = ..()

@@ -83,6 +83,7 @@
 					body += "<a href='?_src_=holder;[HrefToken()];adminplayeropts="+ref+"'>PP</a> - "
 					body += "<a href='?_src_=holder;[HrefToken()];showmessageckey="+ckey+"'>N</a> - "
 					body += "<a href='?_src_=vars;[HrefToken()];Vars="+ref+"'>VV</a> - "
+					body += "<a href='?_src_=vars;[HrefToken()];skill="+ref+"'>SP</a> - "
 					body += "<a href='?_src_=holder;[HrefToken()];traitor="+ref+"'>TP</a> - "
 					if (job == "Cyborg")
 						body += "<a href='?_src_=holder;[HrefToken()];borgpanel="+ref+"'>BP</a> - "
@@ -230,10 +231,10 @@
 			if(isliving(M))
 
 				if(iscarbon(M)) //Carbon stuff
-					if(ishuman(M))
-						M_job = M.job
-					else if(ismonkey(M))
+					if(ismonkey(M))
 						M_job = "Monkey"
+					else if(ishuman(M))
+						M_job = M.job
 					else if(isalien(M)) //aliens
 						if(islarva(M))
 							M_job = "Alien larva"

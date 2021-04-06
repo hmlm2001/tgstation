@@ -57,7 +57,7 @@
 		canvas rotting away and contents vanishing.</span>")
 	qdel(src)
 
-/obj/structure/cursed_money/attack_hand(mob/living/user)
+/obj/structure/cursed_money/attack_hand(mob/living/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -126,7 +126,7 @@
 	desc = "Their success will be yours."
 	icon = 'icons/obj/wizard.dmi'
 	icon_state = "render"
-	item_state = "knife"
+	inhand_icon_state = "knife"
 	lefthand_file = 'icons/mob/inhands/equipment/kitchen_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/kitchen_righthand.dmi'
 	force = 18

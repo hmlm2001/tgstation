@@ -14,7 +14,7 @@
 	if(icon_state == "mirror_broke" && !broken)
 		obj_break(null, mapload)
 
-/obj/structure/mirror/attack_hand(mob/user)
+/obj/structure/mirror/attack_hand(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -31,7 +31,7 @@
 		if(H.gender != FEMALE)
 			var/new_style = input(user, "Select a facial hairstyle", "Grooming")  as null|anything in GLOB.facial_hairstyles_list
 			if(!user.canUseTopic(src, BE_CLOSE, FALSE, NO_TK))
-				return	//no tele-grooming
+				return //no tele-grooming
 			if(new_style)
 				H.facial_hairstyle = new_style
 		else
@@ -40,7 +40,9 @@
 		//handle normal hair
 		var/new_style = input(user, "Select a hairstyle", "Grooming")  as null|anything in GLOB.hairstyles_list
 		if(!user.canUseTopic(src, BE_CLOSE, FALSE, NO_TK))
-			return	//no tele-grooming
+			return //no tele-grooming
+		if(HAS_TRAIT(H, TRAIT_BALD))
+			to_chat(H, "<span class='notice'>If only growing back hair were that easy for you...</span>")
 		if(new_style)
 			H.hairstyle = new_style
 
@@ -68,7 +70,7 @@
 
 /obj/structure/mirror/welder_act(mob/living/user, obj/item/I)
 	..()
-	if(user.a_intent == INTENT_HARM)
+	if(user.combat_mode)
 		return FALSE
 
 	if(!broken)
@@ -120,7 +122,7 @@
 			choosable_races += initial(S.id)
 	..()
 
-/obj/structure/mirror/magic/attack_hand(mob/user)
+/obj/structure/mirror/magic/attack_hand(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -136,7 +138,7 @@
 
 	switch(choice)
 		if("name")
-			var/newname = sanitize_name(reject_bad_text(stripped_input(H, "Who are we again?", "Name change", H.name, MAX_NAME_LEN)))
+			var/newname = sanitize_name(stripped_input(H, "Who are we again?", "Name change", H.name, MAX_NAME_LEN), allow_numbers = TRUE) //It's magic so whatever.
 			if(!newname)
 				return
 			if(!user.canUseTopic(src, BE_CLOSE, FALSE, NO_TK))
@@ -193,7 +195,8 @@
 				if(alert(H, "Become a Witch?", "Confirmation", "Yes", "No") == "Yes")
 					if(!user.canUseTopic(src, BE_CLOSE, FALSE, NO_TK))
 						return
-					H.gender = "female"
+					H.gender = FEMALE
+					H.body_type = FEMALE
 					to_chat(H, "<span class='notice'>Man, you feel like a woman!</span>")
 				else
 					return
@@ -202,7 +205,8 @@
 				if(alert(H, "Become a Warlock?", "Confirmation", "Yes", "No") == "Yes")
 					if(!user.canUseTopic(src, BE_CLOSE, FALSE, NO_TK))
 						return
-					H.gender = "male"
+					H.gender = MALE
+					H.body_type = MALE
 					to_chat(H, "<span class='notice'>Whoa man, you feel like a man!</span>")
 				else
 					return

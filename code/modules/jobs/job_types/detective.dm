@@ -1,9 +1,7 @@
 /datum/job/detective
 	title = "Detective"
-	flag = DETECTIVE
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	department_head = list("Head of Security")
-	department_flag = ENGSEC
 	faction = "Station"
 	total_positions = 1
 	spawn_positions = 1
@@ -14,14 +12,18 @@
 	exp_type = EXP_TYPE_CREW
 
 	outfit = /datum/outfit/job/detective
+	plasmaman_outfit = /datum/outfit/plasmaman/detective
+	departments = DEPARTMENT_SECURITY
 
-	access = list(ACCESS_SEC_DOORS, ACCESS_FORENSICS_LOCKERS, ACCESS_MORGUE, ACCESS_MAINT_TUNNELS, ACCESS_MECH_SECURITY, ACCESS_COURT, ACCESS_BRIG, ACCESS_WEAPONS, ACCESS_MINERAL_STOREROOM)
-	minimal_access = list(ACCESS_SEC_DOORS, ACCESS_FORENSICS_LOCKERS, ACCESS_MORGUE, ACCESS_MAINT_TUNNELS, ACCESS_MECH_SECURITY, ACCESS_COURT, ACCESS_BRIG, ACCESS_WEAPONS, ACCESS_MINERAL_STOREROOM)
 	paycheck = PAYCHECK_MEDIUM
 	paycheck_department = ACCOUNT_SEC
-	mind_traits = list(TRAIT_LAW_ENFORCEMENT_METABOLISM)
+
+	mind_traits = list(TRAIT_DONUT_LOVER)
+	liver_traits = list(TRAIT_LAW_ENFORCEMENT_METABOLISM)
 
 	display_order = JOB_DISPLAY_ORDER_DETECTIVE
+
+	family_heirlooms = list(/obj/item/reagent_containers/food/drinks/bottle/whiskey)
 
 /datum/outfit/job/detective
 	name = "Detective"
@@ -46,6 +48,8 @@
 
 	chameleon_extras = list(/obj/item/gun/ballistic/revolver/detective, /obj/item/clothing/glasses/sunglasses)
 
+	id_trim = /datum/id_trim/job/detective
+
 /datum/outfit/job/detective/post_equip(mob/living/carbon/human/H, visualsOnly = FALSE)
 	..()
 	var/obj/item/clothing/mask/cigarette/cig = H.wear_mask
@@ -54,4 +58,3 @@
 
 	if(visualsOnly)
 		return
-

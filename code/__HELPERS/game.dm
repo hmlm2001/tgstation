@@ -1,9 +1,9 @@
 //supposedly the fastest way to do this according to https://gist.github.com/Giacom/be635398926bb463b42a
 #define RANGE_TURFS(RADIUS, CENTER) \
-  block( \
-    locate(max(CENTER.x-(RADIUS),1),          max(CENTER.y-(RADIUS),1),          CENTER.z), \
-    locate(min(CENTER.x+(RADIUS),world.maxx), min(CENTER.y+(RADIUS),world.maxy), CENTER.z) \
-  )
+	block( \
+	locate(max(CENTER.x-(RADIUS),1),          max(CENTER.y-(RADIUS),1),          CENTER.z), \
+	locate(min(CENTER.x+(RADIUS),world.maxx), min(CENTER.y+(RADIUS),world.maxy), CENTER.z) \
+	)
 
 #define Z_TURFS(ZLEVEL) block(locate(1,1,ZLEVEL), locate(world.maxx, world.maxy, ZLEVEL))
 #define CULT_POLL_WAIT 2400
@@ -53,17 +53,34 @@
 	for(var/I in adjacent_turfs)
 		. |= get_area(I)
 
+/**
+ * Get a bounding box of a list of atoms.
+ *
+ * Arguments:
+ * - atoms - List of atoms. Can accept output of view() and range() procs.
+ *
+ * Returns: list(x1, y1, x2, y2)
+ */
+/proc/get_bbox_of_atoms(list/atoms)
+	var/list/list_x = list()
+	var/list/list_y = list()
+	for(var/_a in atoms)
+		var/atom/a = _a
+		list_x += a.x
+		list_y += a.y
+	return list(
+		min(list_x),
+		min(list_y),
+		max(list_x),
+		max(list_y))
+
 // Like view but bypasses luminosity check
-
 /proc/get_hear(range, atom/source)
-
 	var/lum = source.luminosity
 	source.luminosity = 6
 
-	var/list/heard = view(range, source)
+	. = view(range, source)
 	source.luminosity = lum
-
-	return heard
 
 /proc/alone_in_area(area/the_area, mob/must_be_alone, check_type = /mob/living/carbon)
 	var/area/our_area = get_area(the_area)
@@ -73,8 +90,8 @@
 		if(C == must_be_alone)
 			continue
 		if(our_area == get_area(C))
-			return 0
-	return 1
+			return FALSE
+	return TRUE
 
 //We used to use linear regression to approximate the answer, but Mloc realized this was actually faster.
 //And lo and behold, it is, and it's more accurate to boot.
@@ -125,14 +142,14 @@
 	var/list/turfs = new/list()
 	var/rsq = radius * (radius+0.5)
 
-	for(var/turf/T in range(radius, centerturf))
+	for(var/turf/T as anything in RANGE_TURFS(radius, centerturf))
 		var/dx = T.x - centerturf.x
 		var/dy = T.y - centerturf.y
 		if(dx*dx + dy*dy <= rsq)
 			turfs += T
 	return turfs
 
-/proc/circleviewturfs(center=usr,radius=3)		//Is there even a diffrence between this proc and circlerangeturfs()?
+/proc/circleviewturfs(center=usr,radius=3) //Is there even a diffrence between this proc and circlerangeturfs()?
 
 	var/turf/centerturf = get_turf(center)
 	var/list/turfs = new/list()
@@ -160,12 +177,12 @@
 		processing_list += A.contents
 
 /** recursive_organ_check
-  * inputs: O (object to start with)
-  * outputs:
-  * description: A pseudo-recursive loop based off of the recursive mob check, this check looks for any organs held
-  *				 within 'O', toggling their frozen flag. This check excludes items held within other safe organ
-  *				 storage units, so that only the lowest level of container dictates whether we do or don't decompose
-  */
+ * inputs: O (object to start with)
+ * outputs:
+ * description: A pseudo-recursive loop based off of the recursive mob check, this check looks for any organs held
+ *  within 'O', toggling their frozen flag. This check excludes items held within other safe organ
+ *  storage units, so that only the lowest level of container dictates whether we do or don't decompose
+ */
 /proc/recursive_organ_check(atom/O)
 
 	var/list/processing_list = list(O)
@@ -187,7 +204,7 @@
 				found_organ = organ
 				found_organ.organ_flags ^= ORGAN_FROZEN
 
-		for(var/atom/B in A)	//objects held within other objects are added to the processing list, unless that object is something that can hold organs safely
+		for(var/atom/B in A) //objects held within other objects are added to the processing list, unless that object is something that can hold organs safely
 			if(!processed_list[B] && !istype(B, /obj/structure/closet/crate/freezer) && !istype(B, /obj/structure/closet/secure_closet/freezer))
 				processing_list+= B
 
@@ -241,8 +258,8 @@
 			Y1+=s
 			while(Y1!=Y2)
 				T=locate(X1,Y1,Z)
-				if(T.opacity)
-					return 0
+				if(IS_OPAQUE_TURF(T))
+					return FALSE
 				Y1+=s
 	else
 		var/m=(32*(Y2-Y1)+(PY2-PY1))/(32*(X2-X1)+(PX2-PX1))
@@ -257,9 +274,9 @@
 			else
 				X1+=signX //Line exits tile horizontally
 			T=locate(X1,Y1,Z)
-			if(T.opacity)
-				return 0
-	return 1
+			if(IS_OPAQUE_TURF(T))
+				return FALSE
+	return TRUE
 #undef SIGNV
 
 
@@ -268,13 +285,9 @@
 	var/turf/Bturf = get_turf(B)
 
 	if(!Aturf || !Bturf)
-		return 0
+		return FALSE
 
-	if(inLineOfSight(Aturf.x,Aturf.y, Bturf.x,Bturf.y,Aturf.z))
-		return 1
-
-	else
-		return 0
+	return inLineOfSight(Aturf.x,Aturf.y, Bturf.x,Bturf.y,Aturf.z)
 
 /proc/try_move_adjacent(atom/movable/AM, trydir)
 	var/turf/T = get_turf(AM)
@@ -295,7 +308,7 @@
 	return null
 
 /proc/considered_alive(datum/mind/M, enforce_human = TRUE)
-	if(M && M.current)
+	if(M?.current)
 		if(enforce_human)
 			var/mob/living/carbon/human/H
 			if(ishuman(M.current))
@@ -306,11 +319,11 @@
 	return FALSE
 
 /**
-  * Exiled check
-  *
-  * Checks if the current body of the mind has an exile implant and is currently in
-  * an away mission. Returns FALSE if any of those conditions aren't met.
-  */
+ * Exiled check
+ *
+ * Checks if the current body of the mind has an exile implant and is currently in
+ * an away mission. Returns FALSE if any of those conditions aren't met.
+ */
 /proc/considered_exiled(datum/mind/M)
 	if(!ishuman(M?.current))
 		return FALSE
@@ -323,8 +336,8 @@
 
 /proc/ScreenText(obj/O, maptext="", screen_loc="CENTER-7,CENTER-7", maptext_height=480, maptext_width=480)
 	if(!isobj(O))
-		O = new /obj/screen/text()
-	O.maptext = maptext
+		O = new /atom/movable/screen/text()
+	O.maptext = MAPTEXT(maptext)
 	O.maptext_height = maptext_height
 	O.maptext_width = maptext_width
 	O.screen_loc = screen_loc
@@ -352,7 +365,7 @@
 	var/active_players = 0
 	for(var/i = 1; i <= GLOB.player_list.len; i++)
 		var/mob/M = GLOB.player_list[i]
-		if(M && M.client)
+		if(M?.client)
 			if(alive_check && M.stat)
 				continue
 			else if(afk_check && M.client.is_afk())
@@ -374,8 +387,9 @@
 	SEND_SOUND(M, 'sound/misc/notice2.ogg') //Alerting them to their consideration
 	if(flashwindow)
 		window_flash(M.client)
-	switch(ignore_category ? askuser(M,Question,"Please answer in [DisplayTimeText(poll_time)]!","Yes","No","Never for this round", StealFocus=0, Timeout=poll_time) : askuser(M,Question,"Please answer in [DisplayTimeText(poll_time)]!","Yes","No", StealFocus=0, Timeout=poll_time))
-		if(1)
+	var/list/answers = ignore_category ? list("Yes", "No", "Never for this round") : list("Yes", "No")
+	switch(tgui_alert(M, Question, "A limited-time offer!", answers, timeout=poll_time))
+		if("Yes")
 			to_chat(M, "<span class='notice'>Choice registered: Yes.</span>")
 			if(time_passed + poll_time <= world.time)
 				to_chat(M, "<span class='danger'>Sorry, you answered too late to be considered!</span>")
@@ -383,10 +397,10 @@
 				candidates -= M
 			else
 				candidates += M
-		if(2)
+		if("No")
 			to_chat(M, "<span class='danger'>Choice registered: No.</span>")
 			candidates -= M
-		if(3)
+		if("Never for this round")
 			var/list/L = GLOB.poll_ignore[ignore_category]
 			if(!L)
 				GLOB.poll_ignore[ignore_category] = list()
@@ -398,6 +412,8 @@
 
 /proc/pollGhostCandidates(Question, jobbanType, datum/game_mode/gametypeCheck, be_special_flag = 0, poll_time = 300, ignore_category = null, flashwindow = TRUE)
 	var/list/candidates = list()
+	if(!(GLOB.ghost_role_flags & GHOSTROLE_STATION_SENTIENCE))
+		return candidates
 
 	for(var/mob/dead/observer/G in GLOB.player_list)
 		candidates += G
@@ -498,22 +514,15 @@
 		return
 	var/area/A = get_area(character)
 	deadchat_broadcast("<span class='game'> has arrived at the station at <span class='name'>[A.name]</span>.</span>", "<span class='game'><span class='name'>[character.real_name]</span> ([rank])</span>", follow_target = character, message_type=DEADCHAT_ARRIVALRATTLE)
-	if((!GLOB.announcement_systems.len) || (!character.mind))
+	if(!character.mind)
+		return
+	if(!GLOB.announcement_systems.len)
 		return
 	if((character.mind.assigned_role == "Cyborg") || (character.mind.assigned_role == character.mind.special_role))
 		return
 
 	var/obj/machinery/announcement_system/announcer = pick(GLOB.announcement_systems)
 	announcer.announce("ARRIVAL", character.real_name, rank, list()) //make the list empty to make it announce it in common
-
-/proc/GetRedPart(const/hexa)
-	return hex2num(copytext(hexa, 2, 4))
-
-/proc/GetGreenPart(const/hexa)
-	return hex2num(copytext(hexa, 4, 6))
-
-/proc/GetBluePart(const/hexa)
-	return hex2num(copytext(hexa, 6, 8))
 
 /proc/lavaland_equipment_pressure_check(turf/T)
 	. = FALSE
@@ -534,7 +543,7 @@
 	)
 	return (is_type_in_list(item, pire_wire))
 
-// Find a obstruction free turf that's within the range of the center. Can also condition on if it is of a certain area type.
+// Find an obstruction free turf that's within the range of the center. Can also condition on if it is of a certain area type.
 /proc/find_obstruction_free_location(range, atom/center, area/specific_area)
 	var/list/turfs = RANGE_TURFS(range, center)
 	var/list/possible_loc = list()
@@ -549,7 +558,7 @@
 				continue
 
 		if (!isspaceturf(found_turf))
-			if (!is_blocked_turf(found_turf))
+			if (!found_turf.is_blocked_turf())
 				possible_loc.Add(found_turf)
 
 	// Need at least one free location.

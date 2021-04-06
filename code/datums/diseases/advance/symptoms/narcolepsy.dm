@@ -30,15 +30,16 @@ Bonus
 	)
 
 /datum/symptom/narcolepsy/Start(datum/disease/advance/A)
-	if(!..())
+	. = ..()
+	if(!.)
 		return
-	if(A.properties["transmittable"] >= 4) //yawning (mostly just some copy+pasted code from sneezing, with a few tweaks)
+	if(A.totalTransmittable() >= 4) //yawning (mostly just some copy+pasted code from sneezing, with a few tweaks)
 		yawning = TRUE
-	if(A.properties["stage_speed"] >= 10) //act more often
+	if(A.totalStageSpeed() >= 10) //act more often
 		symptom_delay_min = 20
 		symptom_delay_max = 45
 
-/datum/symptom/narcolepsy/Activate(var/datum/disease/advance/A)
+/datum/symptom/narcolepsy/Activate(datum/disease/advance/A)
 	var/mob/living/M = A.affected_mob
 	switch(A.stage)
 		if(1)

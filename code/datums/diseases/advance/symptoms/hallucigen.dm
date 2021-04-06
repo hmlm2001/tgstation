@@ -34,20 +34,22 @@ Bonus
 	)
 
 /datum/symptom/hallucigen/Start(datum/disease/advance/A)
-	if(!..())
+	. = ..()
+	if(!.)
 		return
-	if(A.properties["stealth"] >= 4) //fake good symptom messages
+	if(A.totalStealth() >= 4) //fake good symptom messages
 		fake_healthy = TRUE
 		base_message_chance = 50
-	if(A.properties["stage_rate"] >= 7) //stronger hallucinations
+	if(A.totalStageSpeed() >= 7) //stronger hallucinations
 		power = 2
 
 /datum/symptom/hallucigen/Activate(datum/disease/advance/A)
-	if(!..())
+	. = ..()
+	if(!.)
 		return
 	var/mob/living/carbon/M = A.affected_mob
 	var/list/healthy_messages = list("Your lungs feel great.", "You realize you haven't been breathing.", "You don't feel the need to breathe.",\
-					"Your eyes feel great.", "You are now blinking manually.", "You don't feel the need to blink.")
+					"Your eyes feel great.", "Your ears feel great.", "You don't feel the need to blink.")
 	switch(A.stage)
 		if(1, 2)
 			if(prob(base_message_chance))

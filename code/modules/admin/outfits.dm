@@ -28,8 +28,9 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 /datum/admins/proc/delete_outfit(mob/admin,datum/outfit/O)
 	GLOB.custom_outfits -= O
 	qdel(O)
-	to_chat(admin,"<span class='notice'>Outfit deleted.</span>")
+	to_chat(admin,"<span class='notice'>Outfit deleted.</span>", confidential = TRUE)
 	outfit_manager(admin)
+	SStgui.update_user_uis(admin)
 
 /datum/admins/proc/load_outfit(mob/admin)
 	var/outfit_file = input("Pick outfit json file:", "File") as null|file
@@ -38,18 +39,19 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 	var/filedata = file2text(outfit_file)
 	var/json = json_decode(filedata)
 	if(!json)
-		to_chat(admin,"<span class='warning'>JSON decode error.</span>")
+		to_chat(admin,"<span class='warning'>JSON decode error.</span>", confidential = TRUE)
 		return
 	var/otype = text2path(json["outfit_type"])
 	if(!ispath(otype,/datum/outfit))
-		to_chat(admin,"<span class='warning'>Malformed/Outdated file.</span>")
+		to_chat(admin,"<span class='warning'>Malformed/Outdated file.</span>", confidential = TRUE)
 		return
 	var/datum/outfit/O = new otype
 	if(!O.load_from(json))
-		to_chat(admin,"<span class='warning'>Malformed/Outdated file.</span>")
+		to_chat(admin,"<span class='warning'>Malformed/Outdated file.</span>", confidential = TRUE)
 		return
 	GLOB.custom_outfits += O
 	outfit_manager(admin)
+	SStgui.update_user_uis(admin)
 
 /datum/admins/proc/create_outfit(mob/admin)
 	var/list/uniforms = typesof(/obj/item/clothing/under)
@@ -241,3 +243,4 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 
 	GLOB.custom_outfits.Add(O)
 	message_admins("[key_name(usr)] created \"[O.name]\" outfit!")
+	SStgui.update_user_uis(admin)

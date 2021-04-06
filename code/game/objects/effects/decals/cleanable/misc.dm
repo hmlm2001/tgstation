@@ -16,8 +16,8 @@
 /obj/effect/decal/cleanable/ash/Initialize()
 	. = ..()
 	reagents.add_reagent(/datum/reagent/ash, 30)
-	pixel_x = rand(-5, 5)
-	pixel_y = rand(-5, 5)
+	pixel_x = base_pixel_x + rand(-5, 5)
+	pixel_y = base_pixel_y + rand(-5, 5)
 
 /obj/effect/decal/cleanable/ash/crematorium
 //crematoriums need their own ash cause default ash deletes itself if created in an obj
@@ -52,9 +52,12 @@
 /obj/effect/decal/cleanable/dirt
 	name = "dirt"
 	desc = "Someone should clean that up."
+	icon = 'icons/effects/dirt.dmi'
 	icon_state = "dirt"
-	canSmoothWith = list(/obj/effect/decal/cleanable/dirt, /turf/closed/wall, /obj/structure/falsewall)
-	smooth = SMOOTH_FALSE
+	base_icon_state = "dirt"
+	smoothing_flags = NONE
+	smoothing_groups = list(SMOOTH_GROUP_CLEANABLE_DIRT)
+	canSmoothWith = list(SMOOTH_GROUP_CLEANABLE_DIRT, SMOOTH_GROUP_WALLS)
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	beauty = -75
 
@@ -62,14 +65,14 @@
 	. = ..()
 	var/turf/T = get_turf(src)
 	if(T.tiled_dirt)
-		smooth = SMOOTH_MORE
-		icon = 'icons/effects/dirt.dmi'
-		icon_state = ""
-		queue_smooth(src)
-	queue_smooth_neighbors(src)
+		smoothing_flags = SMOOTH_BITMASK
+		QUEUE_SMOOTH(src)
+	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
+		QUEUE_SMOOTH_NEIGHBORS(src)
 
 /obj/effect/decal/cleanable/dirt/Destroy()
-	queue_smooth_neighbors(src)
+	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
+		QUEUE_SMOOTH_NEIGHBORS(src)
 	return ..()
 
 /obj/effect/decal/cleanable/dirt/dust
@@ -86,7 +89,7 @@
 	beauty = -300
 
 /obj/effect/decal/cleanable/greenglow/ex_act()
-	return
+	return FALSE
 
 /obj/effect/decal/cleanable/greenglow/filled/Initialize()
 	. = ..()
@@ -105,6 +108,7 @@
 	icon_state = "cobweb1"
 	resistance_flags = FLAMMABLE
 	beauty = -100
+	clean_type = CLEAN_TYPE_HARD_DECAL
 
 /obj/effect/decal/cleanable/cobweb/cobweb2
 	icon_state = "cobweb2"
@@ -117,6 +121,7 @@
 	icon_state = "molten"
 	mergeable_decal = FALSE
 	beauty = -150
+	clean_type = CLEAN_TYPE_HARD_DECAL
 
 /obj/effect/decal/cleanable/molten_object/large
 	name = "big gooey grey mass"
@@ -132,7 +137,7 @@
 	random_icon_states = list("vomit_1", "vomit_2", "vomit_3", "vomit_4")
 	beauty = -150
 
-/obj/effect/decal/cleanable/vomit/attack_hand(mob/user)
+/obj/effect/decal/cleanable/vomit/attack_hand(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -158,6 +163,8 @@
 /obj/effect/decal/cleanable/vomit/old/Initialize(mapload, list/datum/disease/diseases)
 	. = ..()
 	icon_state += "-old"
+	AddElement(/datum/element/swabable, CELL_LINE_TABLE_SLUDGE, CELL_VIRUS_TABLE_GENERIC, rand(2,4), 10)
+
 
 /obj/effect/decal/cleanable/chem_pile
 	name = "chemical pile"
@@ -174,7 +181,7 @@
 	mergeable_decal = FALSE
 
 /obj/effect/decal/cleanable/shreds/ex_act(severity, target)
-	if(severity == 1) //so shreds created during an explosion aren't deleted by the explosion.
+	if(severity == EXPLODE_DEVASTATE) //so shreds created during an explosion aren't deleted by the explosion.
 		qdel(src)
 
 /obj/effect/decal/cleanable/shreds/Initialize(mapload, oldname)
@@ -237,3 +244,16 @@
 	desc = "Torn pieces of cardboard and paper, left over from a package."
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "paper_shreds"
+
+/obj/effect/decal/cleanable/garbage
+	name = "decomposing garbage"
+	desc = "A split open garbage bag, its stinking content seems to be partially liquified. Yuck!"
+	icon = 'icons/obj/objects.dmi'
+	icon_state = "garbage"
+	layer = OBJ_LAYER //To display the decal over wires.
+	beauty = -150
+	clean_type = CLEAN_TYPE_HARD_DECAL
+
+/obj/effect/decal/cleanable/garbage/Initialize()
+	. = ..()
+	AddElement(/datum/element/swabable, CELL_LINE_TABLE_SLUDGE, CELL_VIRUS_TABLE_GENERIC, rand(2,4), 15)

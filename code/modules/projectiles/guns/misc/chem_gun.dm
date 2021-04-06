@@ -4,7 +4,7 @@
 	name = "reagent gun"
 	desc = "A Nanotrasen syringe gun, modified to automatically synthesise chemical darts, and instead hold reagents."
 	icon_state = "chemgun"
-	item_state = "chemgun"
+	inhand_icon_state = "chemgun"
 	w_class = WEIGHT_CLASS_NORMAL
 	throw_speed = 3
 	throw_range = 7
@@ -31,7 +31,7 @@
 	return syringes_left
 
 /obj/item/gun/chem/process_chamber()
-	if(chambered && !chambered.BB && syringes_left)
+	if(chambered && !chambered.loaded_projectile && syringes_left)
 		chambered.newshot()
 
 /obj/item/gun/chem/process()
@@ -41,6 +41,6 @@
 		return
 	to_chat(loc, "<span class='warning'>You hear a click as [src] synthesizes a new dart.</span>")
 	syringes_left++
-	if(chambered && !chambered.BB)
+	if(chambered && !chambered.loaded_projectile)
 		chambered.newshot()
 	last_synth = world.time

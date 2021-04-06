@@ -1,7 +1,7 @@
-import { Fragment } from 'inferno';
 import { useBackend } from '../backend';
 import { Box, Button, LabeledList, NumberInput, Section } from '../components';
 import { InterfaceLockNoticeBox } from './common/InterfaceLockNoticeBox';
+import { Window } from '../layouts';
 
 const DISEASE_THEASHOLD_LIST = [
   'Positive',
@@ -67,18 +67,20 @@ const TARGET_NUTRITION_LIST = [
   },
 ];
 
-export const ScannerGate = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+export const ScannerGate = (props, context) => {
+  const { act, data } = useBackend(context);
   return (
-    <Fragment>
-      <InterfaceLockNoticeBox
-        locked={data.locked}
-        onLockedStatusChange={() => act('toggle_lock')} />
-      {!data.locked && (
-        <ScannerGateControl state={state} />
-      )}
-    </Fragment>
+    <Window
+      width={400}
+      height={300}>
+      <Window.Content scrollable>
+        <InterfaceLockNoticeBox
+          onLockedStatusChange={() => act('toggle_lock')} />
+        {!data.locked && (
+          <ScannerGateControl />
+        )}
+      </Window.Content>
+    </Window>
   );
 };
 
@@ -117,9 +119,8 @@ const SCANNER_GATE_ROUTES = {
   },
 };
 
-const ScannerGateControl = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+const ScannerGateControl = (props, context) => {
+  const { act, data } = useBackend(context);
   const { scan_mode } = data;
   const route = SCANNER_GATE_ROUTES[scan_mode]
     || SCANNER_GATE_ROUTES.off;
@@ -133,15 +134,15 @@ const ScannerGateControl = props => {
           content="back"
           onClick={() => act('set_mode', { new_mode: 'Off' })} />
       )}>
-      <Component state={state} />
+      <Component />
     </Section>
   );
 };
 
-const ScannerGateOff = props => {
-  const { act } = useBackend(props);
+const ScannerGateOff = (props, context) => {
+  const { act } = useBackend(context);
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Select a scanning mode below.
       </Box>
@@ -168,61 +169,57 @@ const ScannerGateOff = props => {
           content="Nanites"
           onClick={() => act('set_mode', { new_mode: 'Nanites' })} />
       </Box>
-    </Fragment>
+    </>
   );
 };
 
-const ScannerGateWanted = props => {
-  const { state } = props;
-  const { data } = useBackend(props);
+const ScannerGateWanted = (props, context) => {
+  const { data } = useBackend(context);
   const { reverse } = data;
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned {reverse ? 'does not have' : 'has'}
         {' '}any warrants for their arrest.
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateGuns = props => {
-  const { state } = props;
-  const { data } = useBackend(props);
+const ScannerGateGuns = (props, context) => {
+  const { data } = useBackend(context);
   const { reverse } = data;
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned {reverse ? 'does not have' : 'has'}
         {' '}any guns.
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateMindshield = props => {
-  const { state } = props;
-  const { data } = useBackend(props);
+const ScannerGateMindshield = (props, context) => {
+  const { data } = useBackend(context);
   const { reverse } = data;
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned {reverse ? 'does not have' : 'has'}
         {' '}a mindshield.
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateDisease = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+const ScannerGateDisease = (props, context) => {
+  const { act, data } = useBackend(context);
   const { reverse, disease_threshold } = data;
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned {reverse ? 'does not have' : 'has'}
         {' '}a disease equal or worse than {disease_threshold}.
@@ -238,20 +235,19 @@ const ScannerGateDisease = props => {
             })} />
         ))}
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateSpecies = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+const ScannerGateSpecies = (props, context) => {
+  const { act, data } = useBackend(context);
   const { reverse, target_species } = data;
   const species = TARGET_SPECIES_LIST.find(species => {
     return species.value === target_species;
   });
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned is {reverse ? 'not' : ''}
         {' '}of the {species.name} species.
@@ -270,20 +266,19 @@ const ScannerGateSpecies = props => {
             })} />
         ))}
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateNutrition = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+const ScannerGateNutrition = (props, context) => {
+  const { act, data } = useBackend(context);
   const { reverse, target_nutrition } = data;
   const nutrition = TARGET_NUTRITION_LIST.find(nutrition => {
     return nutrition.value === target_nutrition;
   });
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned {reverse ? 'does not have' : 'has'}
         {' '}the {nutrition.name} nutrition level.
@@ -299,17 +294,16 @@ const ScannerGateNutrition = props => {
             })} />
         ))}
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateNanites = props => {
-  const { state } = props;
-  const { act, data } = useBackend(props);
+const ScannerGateNanites = (props, context) => {
+  const { act, data } = useBackend(context);
   const { reverse, nanite_cloud } = data;
   return (
-    <Fragment>
+    <>
       <Box mb={2}>
         Trigger if the person scanned {reverse ? 'does not have' : 'has'}
         {' '}nanite cloud {nanite_cloud}.
@@ -329,13 +323,13 @@ const ScannerGateNanites = props => {
           </LabeledList.Item>
         </LabeledList>
       </Box>
-      <ScannerGateMode state={state} />
-    </Fragment>
+      <ScannerGateMode />
+    </>
   );
 };
 
-const ScannerGateMode = props => {
-  const { act, data } = useBackend(props);
+const ScannerGateMode = (props, context) => {
+  const { act, data } = useBackend(context);
   const { reverse } = data;
   return (
     <LabeledList>

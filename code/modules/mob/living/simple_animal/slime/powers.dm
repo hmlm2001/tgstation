@@ -1,9 +1,9 @@
-#define SIZE_DOESNT_MATTER 	-1
-#define BABIES_ONLY			0
-#define ADULTS_ONLY			1
+#define SIZE_DOESNT_MATTER -1
+#define BABIES_ONLY 0
+#define ADULTS_ONLY 1
 
-#define NO_GROWTH_NEEDED	0
-#define GROWTH_NEEDED		1
+#define NO_GROWTH_NEEDED 0
+#define GROWTH_NEEDED 1
 
 /datum/action/innate/slime
 	check_flags = AB_CHECK_CONSCIOUS
@@ -12,20 +12,22 @@
 	var/needs_growth = NO_GROWTH_NEEDED
 
 /datum/action/innate/slime/IsAvailable()
-	if(..())
-		var/mob/living/simple_animal/slime/S = owner
-		if(needs_growth == GROWTH_NEEDED)
-			if(S.amount_grown >= SLIME_EVOLUTION_THRESHOLD)
-				return 1
-			return 0
-		return 1
+	. = ..()
+	if(!.)
+		return
+	var/mob/living/simple_animal/slime/S = owner
+	if(needs_growth == GROWTH_NEEDED)
+		if(S.amount_grown >= SLIME_EVOLUTION_THRESHOLD)
+			return TRUE
+		return FALSE
+	return TRUE
 
 /mob/living/simple_animal/slime/verb/Feed()
 	set category = "Slime"
 	set desc = "This will let you feed on any valid creature in the surrounding area. This should also be used to halt the feeding process."
 
 	if(stat)
-		return 0
+		return FALSE
 
 	var/list/choices = list()
 	for(var/mob/living/C in view(1,src))
@@ -34,10 +36,11 @@
 
 	var/mob/living/M = input(src,"Who do you wish to feed on?") in null|sortNames(choices)
 	if(!M)
-		return 0
+		return FALSE
 	if(CanFeedon(M))
 		Feedon(M)
-		return 1
+		return TRUE
+	return FALSE
 
 /datum/action/innate/slime/feed
 	name = "Feed"
@@ -105,8 +108,8 @@
 	M.unbuckle_all_mobs(force=1) //Slimes rip other mobs (eg: shoulder parrots) off (Slimes Vs Slimes is already handled in CanFeedon())
 	if(M.buckle_mob(src, force=TRUE))
 		layer = M.layer+0.01 //appear above the target mob
-		M.visible_message("<span class='danger'>[name] has latched onto [M]!</span>", \
-						"<span class='userdanger'>[name] has latched onto [M]!</span>")
+		M.visible_message("<span class='danger'>[name] latches onto [M]!</span>", \
+						"<span class='userdanger'>[name] latches onto [M]!</span>")
 	else
 		to_chat(src, "<span class='warning'><i>I have failed to latch onto the subject!</i></span>")
 
@@ -118,7 +121,7 @@
 			"I am not satisified", "I can not feed from this subject", \
 			"I do not feel nourished", "This subject is not food")]!</span>")
 		if(!silent)
-			visible_message("<span class='warning'>[src] has let go of [buckled]!</span>", \
+			visible_message("<span class='warning'>[src] lets go of [buckled]!</span>", \
 							"<span class='notice'><i>I stopped feeding.</i></span>")
 		layer = initial(layer)
 		buckled.unbuckle_mob(src,force=TRUE)
@@ -137,6 +140,8 @@
 			amount_grown = 0
 			for(var/datum/action/innate/slime/evolve/E in actions)
 				E.Remove(src)
+			var/datum/action/innate/slime/reproduce/reproduce_action = new
+			reproduce_action.Grant(src)
 			regenerate_icons()
 			update_name()
 		else
@@ -152,9 +157,6 @@
 /datum/action/innate/slime/evolve/Activate()
 	var/mob/living/simple_animal/slime/S = owner
 	S.Evolve()
-	if(S.is_adult)
-		var/datum/action/innate/slime/reproduce/A = new
-		A.Grant(S)
 
 /mob/living/simple_animal/slime/verb/Reproduce()
 	set category = "Slime"
@@ -201,7 +203,7 @@
 					SEND_SIGNAL(M, COMSIG_NANITE_SYNC, original_nanites, TRUE, TRUE) //The trues are to copy activation as well
 
 			var/mob/living/simple_animal/slime/new_slime = pick(babies)
-			new_slime.a_intent = INTENT_HARM
+			new_slime.set_combat_mode(TRUE)
 			if(src.mind)
 				src.mind.transfer_to(new_slime)
 			else

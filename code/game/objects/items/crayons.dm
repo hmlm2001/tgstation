@@ -1,3 +1,5 @@
+#define DARK_COLOR_LIGHTNESS_THRESHOLD 0.25
+
 #define RANDOM_GRAFFITI "Random Graffiti"
 #define RANDOM_LETTER "Random Letter"
 #define RANDOM_PUNCTUATION "Random Punctuation"
@@ -8,16 +10,16 @@
 #define RANDOM_RUNE "Random Rune"
 #define RANDOM_ANY "Random Anything"
 
-#define PAINT_NORMAL	1
-#define PAINT_LARGE_HORIZONTAL	2
-#define PAINT_LARGE_HORIZONTAL_ICON	'icons/effects/96x32.dmi'
+#define PAINT_NORMAL 1
+#define PAINT_LARGE_HORIZONTAL 2
+#define PAINT_LARGE_HORIZONTAL_ICON 'icons/effects/96x32.dmi'
 
 /*
  * Crayons
  */
 
 /obj/item/toy/crayon
-	name = "crayon"
+	name = "red crayon"
 	desc = "A colourful crayon. Looks tasty. Mmmm..."
 	icon = 'icons/obj/crayons.dmi'
 	icon_state = "crayonred"
@@ -28,7 +30,8 @@
 
 	var/crayon_color = "red"
 	w_class = WEIGHT_CLASS_TINY
-	attack_verb = list("attacked", "coloured")
+	attack_verb_continuous = list("attacks", "colours")
+	attack_verb_simple = list("attack", "colour")
 	grind_results = list()
 	var/paint_color = "#FF0000" //RGB
 
@@ -78,15 +81,19 @@
 
 /obj/item/toy/crayon/Initialize()
 	. = ..()
-	// Makes crayons identifiable in things like grinders
-	if(name == "crayon")
-		name = "[crayon_color] crayon"
 
 	dye_color = crayon_color
 
 	drawtype = pick(all_drawables)
 
+	AddElement(/datum/element/venue_price, FOOD_PRICE_EXOTIC)
+
 	refill()
+
+/obj/item/toy/crayon/examine(mob/user)
+	. = ..()
+	if(can_change_colour)
+		. += "<span class='notice'>Ctrl-click [src] while it's on your person to quickly recolour it.</span>"
 
 /obj/item/toy/crayon/proc/refill()
 	if(charges == -1)
@@ -139,21 +146,28 @@
 		to_chat(user, "<span class='warning'>There is not enough of [src] left!</span>")
 		. = TRUE
 
-/obj/item/toy/crayon/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.hands_state)
-	// tgui is a plague upon this codebase
+/obj/item/toy/crayon/ui_state(mob/user)
+	return GLOB.hands_state
 
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/item/toy/crayon/ui_interact(mob/user, datum/tgui/ui)
+	// tgui is a plague upon this codebase
+	// no u
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "crayon", name, 600, 600,
-			master_ui, state)
+		ui = new(user, src, "Crayon", name)
 		ui.open()
 
 /obj/item/toy/crayon/spraycan/AltClick(mob/user)
-	if(user.canUseTopic(src, BE_CLOSE, ismonkey(user)))
-		if(has_cap)
-			is_capped = !is_capped
-			to_chat(user, "<span class='notice'>The cap on [src] is now [is_capped ? "on" : "off"].</span>")
-			update_icon()
+	if(has_cap && user.canUseTopic(src, BE_CLOSE, NO_DEXTERITY, FALSE, TRUE))
+		is_capped = !is_capped
+		to_chat(user, "<span class='notice'>The cap on [src] is now [is_capped ? "on" : "off"].</span>")
+		update_appearance()
+
+/obj/item/toy/crayon/CtrlClick(mob/user)
+	if(can_change_colour && !isturf(loc) && user.canUseTopic(src, BE_CLOSE, NO_DEXTERITY, FALSE, TRUE))
+		select_colour(user)
+	else
+		return ..()
 
 /obj/item/toy/crayon/proc/staticDrawables()
 
@@ -213,8 +227,10 @@
 	.["current_colour"] = paint_color
 
 /obj/item/toy/crayon/ui_act(action, list/params)
-	if(..())
+	. = ..()
+	if(.)
 		return
+
 	switch(action)
 		if("toggle_cap")
 			if(has_cap)
@@ -232,14 +248,7 @@
 			else
 				paint_mode = PAINT_NORMAL
 		if("select_colour")
-			if(can_change_colour)
-				var/chosen_colour = input(usr,"","Choose Color",paint_color) as color|null
-
-				if (!isnull(chosen_colour))
-					paint_color = chosen_colour
-					. = TRUE
-				else
-					. = FALSE
+			. = can_change_colour && select_colour(usr)
 		if("enter_text")
 			var/txt = stripped_input(usr,"Choose what to write.",
 				"Scribbles",default = text_buffer)
@@ -247,7 +256,14 @@
 			. = TRUE
 			paint_mode = PAINT_NORMAL
 			drawtype = "a"
-	update_icon()
+	update_appearance()
+
+/obj/item/toy/crayon/proc/select_colour(mob/user)
+	var/chosen_colour = input(user, "", "Choose Color", paint_color) as color|null
+	if (!isnull(chosen_colour) && user.canUseTopic(src, BE_CLOSE, NO_DEXTERITY, FALSE, TRUE))
+		paint_color = chosen_colour
+		return TRUE
+	return FALSE
 
 /obj/item/toy/crayon/proc/crayon_text_strip(text)
 	var/static/regex/crayon_r = new /regex(@"[^\w!?,.=%#&+\/\-]")
@@ -269,10 +285,8 @@
 	if(ishuman(user))
 		if (istagger)
 			cost *= 0.5
-	var/charges_used = use_charges(user, cost)
-	if(!charges_used)
+	if(check_empty(user, cost))
 		return
-	. = charges_used
 
 	if(istype(target, /obj/effect/decal/cleanable))
 		target = target.loc
@@ -321,7 +335,7 @@
 	if(user.mind)
 		gang_mode = user.mind.has_antag_datum(/datum/antagonist/gang)
 
-	if(gang_mode && (!can_claim_for_gang(user, target)))
+	if(gang_mode && (!can_claim_for_gang(user, target, gang_mode)))
 		return
 
 
@@ -337,16 +351,16 @@
 			else
 				graf_rot = 0
 
-	var/list/click_params = params2list(params)
+	var/list/modifiers = params2list(params)
 	var/clickx
 	var/clicky
 
-	if(click_params && click_params["icon-x"] && click_params["icon-y"])
-		clickx = clamp(text2num(click_params["icon-x"]) - 16, -(world.icon_size/2), world.icon_size/2)
-		clicky = clamp(text2num(click_params["icon-y"]) - 16, -(world.icon_size/2), world.icon_size/2)
+	if(LAZYACCESS(modifiers, ICON_X) && LAZYACCESS(modifiers, ICON_Y))
+		clickx = clamp(text2num(LAZYACCESS(modifiers, ICON_X)) - 16, -(world.icon_size/2), world.icon_size/2)
+		clicky = clamp(text2num(LAZYACCESS(modifiers, ICON_Y)) - 16, -(world.icon_size/2), world.icon_size/2)
 
 	if(!instant)
-		to_chat(user, "<span class='notice'>You start drawing a [temp] on the	[target.name]...</span>")
+		to_chat(user, "<span class='notice'>You start drawing a [temp] on the [target.name]...</span>")
 
 	if(pre_noise)
 		audible_message("<span class='notice'>You hear spraying.</span>")
@@ -359,6 +373,11 @@
 	if(gang_mode || !instant)
 		if(!do_after(user, 50, target = target))
 			return
+
+	var/charges_used = use_charges(user, cost)
+	if(!charges_used)
+		return
+	. = charges_used
 
 	if(length(text_buffer))
 		drawing = text_buffer[1]
@@ -393,9 +412,9 @@
 						return
 			C.add_hiddenprint(user)
 			if(istagger)
-				C.AddComponent(/datum/component/art, GOOD_ART)
+				C.AddElement(/datum/element/art, GOOD_ART)
 			else
-				C.AddComponent(/datum/component/art, BAD_ART)
+				C.AddElement(/datum/element/art, BAD_ART)
 
 	if(!instant)
 		to_chat(user, "<span class='notice'>You finish drawing \the [temp].</span>")
@@ -414,8 +433,7 @@
 	if(affected_turfs.len)
 		fraction /= affected_turfs.len
 	for(var/t in affected_turfs)
-		reagents.reaction(t, TOUCH, fraction * volume_multiplier)
-		reagents.trans_to(t, ., volume_multiplier, transfered_by = user)
+		reagents.trans_to(t, ., volume_multiplier, transfered_by = user, methods = TOUCH)
 	check_empty(user)
 
 /obj/item/toy/crayon/attack(mob/M, mob/user)
@@ -434,14 +452,12 @@
 		var/eaten = use_charges(user, 5, FALSE)
 		if(check_empty(user)) //Prevents divsion by zero
 			return
-		var/fraction = min(eaten / reagents.total_volume, 1)
-		reagents.reaction(M, INGEST, fraction * volume_multiplier)
-		reagents.trans_to(M, eaten, volume_multiplier, transfered_by = user)
+		reagents.trans_to(M, eaten, volume_multiplier, transfered_by = user, methods = INGEST)
 		// check_empty() is called during afterattack
 	else
 		..()
 
-/obj/item/toy/crayon/proc/can_claim_for_gang(mob/user, atom/target)
+/obj/item/toy/crayon/proc/can_claim_for_gang(mob/user, atom/target, datum/antagonist/gang/user_gang)
 	var/area/A = get_area(target)
 	if(!A || (!is_station_level(A.z)))
 		to_chat(user, "<span class='warning'>[A] is unsuitable for tagging.</span>")
@@ -455,9 +471,12 @@
 		to_chat(user, "<span class='warning'>You can't tag an APC.</span>")
 		return FALSE
 
-	var/occupying_gang = territory_claimed(A, user)
+	var/obj/effect/decal/cleanable/crayon/gang/occupying_gang = territory_claimed(A, user)
 	if(occupying_gang && !spraying_over)
-		to_chat(user, "<span class='danger'>[A] has already been tagged by a gang! You must find and spray over the old tag first!</span>")
+		if(occupying_gang.my_gang == user_gang.my_gang)
+			to_chat(user, "<span class='danger'>[A] has already been tagged by our gang!</span>")
+		else
+			to_chat(user, "<span class='danger'>[A] has already been tagged by a gang! You must find and spray over the old tag instead!</span>")
 		return FALSE
 
 	// stolen from oldgang lmao
@@ -479,9 +498,10 @@
 /obj/item/toy/crayon/proc/territory_claimed(area/territory, mob/user)
 	for(var/obj/effect/decal/cleanable/crayon/gang/G in GLOB.gang_tags)
 		if(get_area(G) == territory)
-			return TRUE
+			return G
 
 /obj/item/toy/crayon/red
+	name = "red crayon"
 	icon_state = "crayonred"
 	paint_color = "#DA0000"
 	crayon_color = "red"
@@ -489,6 +509,7 @@
 	dye_color = DYE_RED
 
 /obj/item/toy/crayon/orange
+	name = "orange crayon"
 	icon_state = "crayonorange"
 	paint_color = "#FF9300"
 	crayon_color = "orange"
@@ -496,6 +517,7 @@
 	dye_color = DYE_ORANGE
 
 /obj/item/toy/crayon/yellow
+	name = "yellow crayon"
 	icon_state = "crayonyellow"
 	paint_color = "#FFF200"
 	crayon_color = "yellow"
@@ -503,6 +525,7 @@
 	dye_color = DYE_YELLOW
 
 /obj/item/toy/crayon/green
+	name = "green crayon"
 	icon_state = "crayongreen"
 	paint_color = "#A8E61D"
 	crayon_color = "green"
@@ -510,6 +533,7 @@
 	dye_color = DYE_GREEN
 
 /obj/item/toy/crayon/blue
+	name = "blue crayon"
 	icon_state = "crayonblue"
 	paint_color = "#00B7EF"
 	crayon_color = "blue"
@@ -517,6 +541,7 @@
 	dye_color = DYE_BLUE
 
 /obj/item/toy/crayon/purple
+	name = "purple crayon"
 	icon_state = "crayonpurple"
 	paint_color = "#DA00FF"
 	crayon_color = "purple"
@@ -524,6 +549,7 @@
 	dye_color = DYE_PURPLE
 
 /obj/item/toy/crayon/black
+	name = "black crayon"
 	icon_state = "crayonblack"
 	paint_color = "#1C1C1C" //Not completely black because total black looks bad. So Mostly Black.
 	crayon_color = "black"
@@ -531,6 +557,7 @@
 	dye_color = DYE_BLACK
 
 /obj/item/toy/crayon/white
+	name = "white crayon"
 	icon_state = "crayonwhite"
 	paint_color = "#FFFFFF"
 	crayon_color = "white"
@@ -538,6 +565,7 @@
 	dye_color = DYE_WHITE
 
 /obj/item/toy/crayon/mime
+	name = "mime crayon"
 	icon_state = "crayonmime"
 	desc = "A very sad-looking crayon."
 	paint_color = "#FFFFFF"
@@ -547,6 +575,7 @@
 	dye_color = DYE_MIME
 
 /obj/item/toy/crayon/rainbow
+	name = "rainbow crayon"
 	icon_state = "crayonrainbow"
 	paint_color = "#FFF000"
 	crayon_color = "rainbow"
@@ -569,6 +598,7 @@
 	icon = 'icons/obj/crayons.dmi'
 	icon_state = "crayonbox"
 	w_class = WEIGHT_CLASS_SMALL
+	custom_materials = list(/datum/material/cardboard = 2000)
 
 /obj/item/storage/crayons/Initialize()
 	. = ..()
@@ -584,7 +614,7 @@
 	new /obj/item/toy/crayon/blue(src)
 	new /obj/item/toy/crayon/purple(src)
 	new /obj/item/toy/crayon/black(src)
-	update_icon()
+	update_appearance()
 
 /obj/item/storage/crayons/update_overlays()
 	. = ..()
@@ -606,6 +636,19 @@
 			return
 	return ..()
 
+/obj/item/storage/crayons/attack_self(mob/user)
+	. = ..()
+	if(contents.len > 0)
+		to_chat(user, "<span class='warning'>You can't fold down [src] with crayons inside!</span>")
+		return
+	if(flags_1 & HOLOGRAM_1)
+		return
+
+	var/obj/item/stack/sheet/cardboard/cardboard = new /obj/item/stack/sheet/cardboard(user.drop_location())
+	to_chat(user, "<span class='notice'>You fold the [src] into cardboard.</span>")
+	user.put_in_active_hand(cardboard)
+	qdel(src)
+
 //Spraycan stuff
 
 /obj/item/toy/crayon/spraycan
@@ -617,7 +660,7 @@
 	use_overlays = TRUE
 	paint_color = null
 
-	item_state = "spraycan"
+	inhand_icon_state = "spraycan"
 	lefthand_file = 'icons/mob/inhands/equipment/hydroponics_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/hydroponics_righthand.dmi'
 	desc = "A metallic container containing tasty paint."
@@ -651,15 +694,11 @@
 			playsound(src, 'sound/effects/spray.ogg', 5, TRUE, 5)
 		if(can_change_colour)
 			paint_color = "#C0C0C0"
-		update_icon()
+		update_appearance()
 		if(actually_paints)
-			H.lip_style = "spray_face"
-			H.lip_color = paint_color
-			H.update_body()
+			H.update_lips("spray_face", paint_color)
 		var/used = use_charges(user, 10, FALSE)
-		var/fraction = min(1, used / reagents.maximum_volume)
-		reagents.reaction(user, VAPOR, fraction * volume_multiplier)
-		reagents.trans_to(user, used, volume_multiplier, transfered_by = user)
+		reagents.trans_to(user, used, volume_multiplier, transfered_by = user, methods = VAPOR)
 
 		return (OXYLOSS)
 
@@ -670,7 +709,7 @@
 		paint_color = pick("#DA0000","#FF9300","#FFF200","#A8E61D","#00B7EF",
 		"#DA00FF")
 	refill()
-	update_icon()
+	update_appearance()
 
 
 /obj/item/toy/crayon/spraycan/examine(mob/user)
@@ -708,34 +747,27 @@
 			flash_color(C, flash_color=paint_color, flash_time=40)
 		if(ishuman(C) && actually_paints)
 			var/mob/living/carbon/human/H = C
-			H.lip_style = "spray_face"
-			H.lip_color = paint_color
-			H.update_body()
-
+			H.update_lips("spray_face", paint_color)
 		. = use_charges(user, 10, FALSE)
 		var/fraction = min(1, . / reagents.maximum_volume)
-		reagents.reaction(C, VAPOR, fraction * volume_multiplier)
+		reagents.expose(C, VAPOR, fraction * volume_multiplier)
 
 		return
 
-	if(isobj(target) && !istype(target, /obj/effect/decal/cleanable/crayon/gang))
+	if(isobj(target) && !(target.flags_1 & UNPAINTABLE_1))
 		if(actually_paints)
-			if(color_hex2num(paint_color) < 350 && !istype(target, /obj/structure/window) && !istype(target, /obj/effect/decal/cleanable/crayon)) //Colors too dark are rejected
-				to_chat(usr, "<span class='warning'>A color that dark on an object like this? Surely not...</span>")
+			var/list/rgb = hex2rgb(paint_color)
+			var/list/hsl = rgb2hsl(rgb[1], rgb[2], rgb[3])
+			var/color_is_dark = hsl[3] < DARK_COLOR_LIGHTNESS_THRESHOLD
+
+			if (color_is_dark && !(target.flags_1 & ALLOW_DARK_PAINTS_1))
+				to_chat(user, "<span class='warning'>A color that dark on an object like this? Surely not...</span>")
 				return FALSE
 
 			target.add_atom_colour(paint_color, WASHABLE_COLOUR_PRIORITY)
-
-			if(istype(target, /obj/structure/window))
-				if(color_hex2num(paint_color) < 255)
-					target.set_opacity(255)
-				else
-					target.set_opacity(initial(target.opacity))
-
+			SEND_SIGNAL(target, COMSIG_OBJ_PAINTED, color_is_dark)
 		. = use_charges(user, 2)
-		var/fraction = min(1, . / reagents.maximum_volume)
-		reagents.reaction(target, TOUCH, fraction * volume_multiplier)
-		reagents.trans_to(target, ., volume_multiplier, transfered_by = user)
+		reagents.trans_to(target, ., volume_multiplier, transfered_by = user, methods = VAPOR)
 
 		if(pre_noise || post_noise)
 			playsound(user.loc, 'sound/effects/spray.ogg', 5, TRUE, 5)
@@ -746,6 +778,7 @@
 
 /obj/item/toy/crayon/spraycan/update_icon_state()
 	icon_state = is_capped ? icon_capped : icon_uncapped
+	return ..()
 
 /obj/item/toy/crayon/spraycan/update_overlays()
 	. = ..()
@@ -826,6 +859,7 @@
 	charges = -1
 	desc = "Now with 30% more bluespace technology."
 
+#undef DARK_COLOR_LIGHTNESS_THRESHOLD
 #undef RANDOM_GRAFFITI
 #undef RANDOM_LETTER
 #undef RANDOM_PUNCTUATION

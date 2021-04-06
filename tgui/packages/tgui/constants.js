@@ -1,3 +1,9 @@
+/**
+ * @file
+ * @copyright 2020 Aleksej Komarov
+ * @license MIT
+ */
+
 // UI states, which are mirrored from the BYOND code.
 export const UI_INTERACTIVE = 2;
 export const UI_UPDATE = 1;
@@ -23,6 +29,11 @@ export const COLORS = {
     toxin: '#2ecc71',
     burn: '#e67e22',
     brute: '#e74c3c',
+  },
+  // reagent / chemistry related colours
+  reagent: {
+    acidicbuffer: "#fbc314",
+    basicbuffer: "#3853a4",
   },
 };
 
@@ -63,6 +74,16 @@ export const RADIO_CHANNELS = [
     name: 'Blue Team',
     freq: 1217,
     color: '#3434fd',
+  },
+  {
+    name: 'Green Team',
+    freq: 1219,
+    color: '#34fd34',
+  },
+  {
+    name: 'Yellow Team',
+    freq: 1221,
+    color: '#d1ba22',
   },
   {
     name: 'CentCom',
@@ -194,6 +215,12 @@ const GASES = [
     'name': 'Miasma',
     'label': 'Miasma',
     'color': 'olive',
+  },
+  {
+    'id': 'hydrogen',
+    'name': 'Hydrogen',
+    'label': 'H₂',
+    'color': 'white',
   },
 ];
 

@@ -6,6 +6,7 @@
 	desc = "This is rubbish."
 	w_class = WEIGHT_CLASS_TINY
 	resistance_flags = FLAMMABLE
+	item_flags = NOBLUDGEON
 
 /obj/item/trash/Initialize(mapload)
 	var/turf/T = get_turf(src)
@@ -60,11 +61,6 @@
 	name = "waffles tray"
 	icon_state = "waffles"
 
-/obj/item/trash/plate
-	name = "plate"
-	icon_state = "plate"
-	resistance_flags = NONE
-
 /obj/item/trash/pistachios
 	name = "pistachios pack"
 	icon_state = "pistachios_pack"
@@ -107,6 +103,3 @@
 	. = ..()
 	pixel_x = rand(-4,4)
 	pixel_y = rand(-4,4)
-
-/obj/item/trash/attack(mob/M, mob/living/user)
-	return

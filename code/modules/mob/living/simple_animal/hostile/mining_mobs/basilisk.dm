@@ -28,6 +28,7 @@
 	attack_verb_simple = "bite into"
 	speak_emote = list("chitters")
 	attack_sound = 'sound/weapons/bladeslice.ogg'
+	attack_vis_effect = ATTACK_EFFECT_BITE
 	aggro_vision_range = 9
 	turns_per_move = 5
 	gold_core_spawnable = HOSTILE_SPAWN
@@ -42,7 +43,7 @@
 	damage = 0
 	damage_type = BURN
 	nodamage = TRUE
-	flag = "energy"
+	flag = ENERGY
 	temperature = -50 // Cools you down! per hit!
 
 /obj/projectile/temp/basilisk/heated
@@ -61,11 +62,11 @@
 
 /mob/living/simple_animal/hostile/asteroid/basilisk/ex_act(severity, target)
 	switch(severity)
-		if(1)
+		if(EXPLODE_DEVASTATE)
 			gib()
-		if(2)
+		if(EXPLODE_HEAVY)
 			adjustBruteLoss(140)
-		if(3)
+		if(EXPLODE_LIGHT)
 			adjustBruteLoss(110)
 
 /mob/living/simple_animal/hostile/asteroid/basilisk/AttackingTarget()
@@ -81,7 +82,7 @@
 			projectiletype = /obj/projectile/temp/basilisk/heated
 			addtimer(CALLBACK(src, .proc/cool_down), 3000)
 
-mob/living/simple_animal/hostile/asteroid/basilisk/proc/cool_down()
+/mob/living/simple_animal/hostile/asteroid/basilisk/proc/cool_down()
 	visible_message("<span class='warning'>[src] appears to be cooling down...</span>")
 	if(stat != DEAD)
 		icon_state = "Basilisk"
@@ -100,16 +101,18 @@ mob/living/simple_animal/hostile/asteroid/basilisk/proc/cool_down()
 	icon_dead = "watcher_dead"
 	health_doll_icon = "watcher"
 	pixel_x = -10
+	base_pixel_x = -10
 	throw_message = "bounces harmlessly off of"
 	melee_damage_lower = 15
 	melee_damage_upper = 15
 	attack_verb_continuous = "impales"
 	attack_verb_simple = "impale"
-	a_intent = INTENT_HARM
+	combat_mode = TRUE
 	speak_emote = list("telepathically cries")
 	attack_sound = 'sound/weapons/bladeslice.ogg'
-	stat_attack = UNCONSCIOUS
-	movement_type = FLYING
+	attack_vis_effect = null // doesn't bite unlike the parent type.
+	stat_attack = HARD_CRIT
+	is_flying_animal = TRUE
 	robust_searching = 1
 	crusher_loot = /obj/item/crusher_trophy/watcher_wing
 	gold_core_spawnable = NO_SPAWN
@@ -119,7 +122,7 @@ mob/living/simple_animal/hostile/asteroid/basilisk/proc/cool_down()
 	search_objects = 1
 	wanted_objects = list(/obj/item/pen/survival, /obj/item/stack/ore/diamond)
 
-/mob/living/simple_animal/hostile/asteroid/basilisk/watcher/Life()
+/mob/living/simple_animal/hostile/asteroid/basilisk/watcher/Life(delta_time = SSMOBS_DT, times_fired)
 	. = ..()
 	if(stat == CONSCIOUS)
 		consume_bait()
@@ -160,6 +163,7 @@ mob/living/simple_animal/hostile/asteroid/basilisk/proc/cool_down()
 	icon_dead = "watcher_magmawing_dead"
 	maxHealth = 215 //Compensate for the lack of slowdown on projectiles with a bit of extra health
 	health = 215
+	light_system = MOVABLE_LIGHT
 	light_range = 3
 	light_power = 2.5
 	light_color = LIGHT_COLOR_LAVA

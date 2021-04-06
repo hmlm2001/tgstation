@@ -3,15 +3,14 @@
 	desc = "Dance my monkeys! DANCE!!!"
 	icon = 'icons/obj/radio.dmi'
 	icon_state = "electropack0"
-	item_state = "electropack"
+	inhand_icon_state = "electropack"
 	lefthand_file = 'icons/mob/inhands/misc/devices_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/misc/devices_righthand.dmi'
 	flags_1 = CONDUCT_1
 	slot_flags = ITEM_SLOT_BACK
 	w_class = WEIGHT_CLASS_HUGE
 	custom_materials = list(/datum/material/iron=10000, /datum/material/glass=2500)
-	var/ui_x = 260
-	var/ui_y = 137
+
 	var/on = TRUE
 	var/code = 2
 	var/frequency = FREQ_ELECTROPACK
@@ -30,7 +29,7 @@
 	return (FIRELOSS)
 
 //ATTACK HAND IGNORING PARENT RETURN VALUE
-/obj/item/electropack/attack_hand(mob/user)
+/obj/item/electropack/attack_hand(mob/user, list/modifiers)
 	if(iscarbon(user))
 		var/mob/living/carbon/C = user
 		if(src == C.back)
@@ -47,11 +46,11 @@
 			to_chat(user, "<span class='warning'>[W] is stuck to your hand, you cannot attach it to [src]!</span>")
 			return
 		W.master = A
-		A.part1 = W
+		A.helmet_part = W
 
 		user.transferItemToLoc(src, A, TRUE)
 		master = A
-		A.part2 = src
+		A.electropack_part = src
 
 		user.put_in_hands(A)
 		A.add_fingerprint(user)
@@ -61,7 +60,6 @@
 /obj/item/electropack/receive_signal(datum/signal/signal)
 	if(!signal || signal.data["code"] != code)
 		return
-
 	if(isliving(loc) && on)
 		if(shock_cooldown)
 			return
@@ -78,6 +76,9 @@
 		L.Paralyze(100)
 
 	if(master)
+		if(isassembly(master))
+			var/obj/item/assembly/master_as_assembly = master
+			master_as_assembly.pulsed()
 		master.receive_signal()
 
 /obj/item/electropack/proc/set_frequency(new_frequency)
@@ -85,17 +86,13 @@
 	frequency = new_frequency
 	SSradio.add_object(src, frequency, RADIO_SIGNALER)
 
-/obj/item/electropack/ui_status(mob/user)
-	var/mob/living/carbon/C = user
-	if(C?.back == src)
-		return UI_CLOSE
-	return ..()
+/obj/item/electropack/ui_state(mob/user)
+	return GLOB.hands_state
 
-/obj/item/electropack/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, \
-									datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/item/electropack/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "electropack", name, ui_x, ui_y, master_ui, state)
+		ui = new(user, src, "Electropack", name)
 		ui.open()
 
 /obj/item/electropack/ui_data(mob/user)
@@ -108,11 +105,8 @@
 	return data
 
 /obj/item/electropack/ui_act(action, params)
-	if(..())
-		return
-
-	var/mob/living/carbon/C = usr
-	if(C?.back == src)
+	. = ..()
+	if(.)
 		return
 
 	switch(action)

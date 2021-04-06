@@ -3,7 +3,7 @@
 	desc = "Holds up to six drink cans, and select bottles."
 	icon = 'icons/obj/storage.dmi'
 	icon_state = "canholder"
-	item_state = "cola"
+	inhand_icon_state = "cola"
 	lefthand_file = 'icons/mob/inhands/misc/food_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/misc/food_righthand.dmi'
 	custom_materials = list(/datum/material/plastic = 1200)
@@ -15,10 +15,11 @@
 
 /obj/item/storage/cans/update_icon_state()
 	icon_state = "[initial(icon_state)][contents.len]"
+	return ..()
 
 /obj/item/storage/cans/Initialize()
 	. = ..()
-	update_icon()
+	update_appearance()
 
 /obj/item/storage/cans/ComponentInitialize()
 	. = ..()

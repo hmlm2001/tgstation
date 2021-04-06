@@ -110,14 +110,14 @@
 	var/spent = FALSE
 
 /datum/nanite_program/sensor/crit/check_event()
-	if(host_mob.InCritical())
-		if(!spent)
-			spent = TRUE
-			return TRUE
-		return FALSE
-	else
-		spent = FALSE
-		return FALSE
+	if(HAS_TRAIT(host_mob, TRAIT_CRITICAL_CONDITION))
+		if(spent)
+			return FALSE
+		spent = TRUE
+		return TRUE
+	spent = FALSE
+	return FALSE
+
 
 /datum/nanite_program/sensor/crit/make_rule(datum/nanite_program/target)
 	var/datum/nanite_rule/crit/rule = new(target)
@@ -236,7 +236,6 @@
 /datum/nanite_program/sensor/voice
 	name = "Voice Sensor"
 	desc = "Sends a signal when the nanites hear a determined word or sentence."
-	var/spent = FALSE
 
 /datum/nanite_program/sensor/voice/register_extra_settings()
 	. = ..()
@@ -256,10 +255,10 @@
 	if(!sentence.get_value())
 		return
 	if(inclusive.get_value())
-		if(findtextEx(hearing_args[HEARING_RAW_MESSAGE], sentence))
+		if(findtext(hearing_args[HEARING_RAW_MESSAGE], sentence.get_value()))
 			send_code()
 	else
-		if(hearing_args[HEARING_RAW_MESSAGE] == sentence)
+		if(lowertext(hearing_args[HEARING_RAW_MESSAGE]) == lowertext(sentence.get_value()))
 			send_code()
 
 /datum/nanite_program/sensor/species
@@ -270,14 +269,14 @@
 	trigger_cooldown = 5
 
 	var/list/static/allowed_species = list(
-    	"Human" = /datum/species/human,
-    	"Lizard" = /datum/species/lizard,
+		"Human" = /datum/species/human,
+		"Lizard" = /datum/species/lizard,
 		"Moth" = /datum/species/moth,
 		"Ethereal" = /datum/species/ethereal,
 		"Pod" = /datum/species/pod,
 		"Fly" = /datum/species/fly,
 		"Felinid" = /datum/species/human/felinid,
-		"Jelly" = /datum/species/jelly
+		"Jelly" = /datum/species/jelly,
 	)
 
 /datum/nanite_program/sensor/species/register_extra_settings()
@@ -297,7 +296,7 @@
 	if(species)
 		if(is_species(host_mob, species))
 			species_match = TRUE
-	else	//this is the check for the "Other" option
+	else //this is the check for the "Other" option
 		species_match = TRUE
 		for(var/name in allowed_species)
 			var/species_other = allowed_species[name]

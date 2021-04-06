@@ -1,7 +1,8 @@
 /obj/machinery/recharger
 	name = "recharger"
 	icon = 'icons/obj/stationobjs.dmi'
-	icon_state = "recharger0"
+	icon_state = "recharger"
+	base_icon_state = "recharger"
 	desc = "A charging dock for energy based weaponry."
 	use_power = IDLE_POWER_USE
 	idle_power_usage = 4
@@ -46,18 +47,18 @@
 		START_PROCESSING(SSmachines, src)
 		use_power = ACTIVE_POWER_USE
 		using_power = TRUE
-		update_icon()
+		update_appearance()
 	else
 		use_power = IDLE_POWER_USE
 		using_power = FALSE
-		update_icon()
+		update_appearance()
 
 /obj/machinery/recharger/attackby(obj/item/G, mob/user, params)
 	if(G.tool_behaviour == TOOL_WRENCH)
 		if(charging)
 			to_chat(user, "<span class='notice'>Remove the charging item first!</span>")
 			return
-		setAnchored(!anchored)
+		set_anchored(!anchored)
 		power_change()
 		to_chat(user, "<span class='notice'>You [anchored ? "attached" : "detached"] [src].</span>")
 		G.play_tool_sound(src)
@@ -91,7 +92,8 @@
 		return 1
 
 	if(anchored && !charging)
-		if(default_deconstruction_screwdriver(user, "rechargeropen", "recharger0", G))
+		if(default_deconstruction_screwdriver(user, "recharger", "recharger", G))
+			update_appearance()
 			return
 
 		if(panel_open && G.tool_behaviour == TOOL_CROWBAR)
@@ -100,25 +102,29 @@
 
 	return ..()
 
-/obj/machinery/recharger/attack_hand(mob/user)
+/obj/machinery/recharger/attack_hand(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
 
 	add_fingerprint(user)
 	if(charging)
-		charging.update_icon()
+		charging.update_appearance()
 		charging.forceMove(drop_location())
 		user.put_in_hands(charging)
 		setCharging(null)
 
-/obj/machinery/recharger/attack_tk(mob/user)
-	if(charging)
-		charging.update_icon()
-		charging.forceMove(drop_location())
-		setCharging(null)
 
-/obj/machinery/recharger/process()
+/obj/machinery/recharger/attack_tk(mob/user)
+	if(!charging)
+		return
+	charging.update_appearance()
+	charging.forceMove(drop_location())
+	setCharging(null)
+	return COMPONENT_CANCEL_ATTACK_CHAIN
+
+
+/obj/machinery/recharger/process(delta_time)
 	if(machine_stat & (NOPOWER|BROKEN) || !anchored)
 		return PROCESS_KILL
 
@@ -127,18 +133,18 @@
 		var/obj/item/stock_parts/cell/C = charging.get_cell()
 		if(C)
 			if(C.charge < C.maxcharge)
-				C.give(C.chargerate * recharge_coeff)
-				use_power(250 * recharge_coeff)
+				C.give(C.chargerate * recharge_coeff * delta_time / 2)
+				use_power(125 * recharge_coeff * delta_time)
 				using_power = TRUE
-			update_icon()
+			update_appearance()
 
 		if(istype(charging, /obj/item/ammo_box/magazine/recharge))
 			var/obj/item/ammo_box/magazine/recharge/R = charging
 			if(R.stored_ammo.len < R.max_ammo)
 				R.stored_ammo += new R.ammo_type(R)
-				use_power(200 * recharge_coeff)
+				use_power(100 * recharge_coeff * delta_time)
 				using_power = TRUE
-			update_icon()
+			update_appearance()
 			return
 	else
 		return PROCESS_KILL
@@ -158,16 +164,29 @@
 			if(B.cell)
 				B.cell.charge = 0
 
+/obj/machinery/recharger/update_appearance(updates)
+	. = ..()
+	if((machine_stat & (NOPOWER|BROKEN)) || panel_open || !anchored)
+		luminosity = 0
+		return
+	luminosity = 1
 
-/obj/machinery/recharger/update_icon_state()
+/obj/machinery/recharger/update_overlays()
+	. = ..()
 	if(machine_stat & (NOPOWER|BROKEN) || !anchored)
-		icon_state = "rechargeroff"
-	else if(panel_open)
-		icon_state = "rechargeropen"
-	else if(charging)
-		if(using_power)
-			icon_state = "recharger1"
-		else
-			icon_state = "recharger2"
-	else
-		icon_state = "recharger0"
+		return
+	if(panel_open)
+		. += mutable_appearance(icon, "[base_icon_state]-open", layer, plane, alpha)
+		return
+
+	if(!charging)
+		. += mutable_appearance(icon, "[base_icon_state]-empty", layer, plane, alpha)
+		. += mutable_appearance(icon, "[base_icon_state]-empty", 0, EMISSIVE_PLANE, alpha)
+		return
+	if(using_power)
+		. += mutable_appearance(icon, "[base_icon_state]-charging", layer, plane, alpha)
+		. += mutable_appearance(icon, "[base_icon_state]-charging", 0, EMISSIVE_PLANE, alpha)
+		return
+
+	. += mutable_appearance(icon, "[base_icon_state]-full", layer, plane, alpha)
+	. += mutable_appearance(icon, "[base_icon_state]-full", 0, EMISSIVE_PLANE, alpha)

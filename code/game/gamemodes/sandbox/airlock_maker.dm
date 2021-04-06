@@ -7,7 +7,7 @@
 /obj/structure/door_assembly
 	var/datum/airlock_maker/maker = null
 
-/obj/structure/door_assembly/attack_hand()
+/obj/structure/door_assembly/attack_hand(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -21,14 +21,14 @@
 	var/require_all = 1
 
 	var/paintjob = "none"
-	var/glassdoor = 0
+	var/glassdoor = FALSE
 
 	var/doorname = "airlock"
 
-/datum/airlock_maker/New(var/atom/target_loc)
+/datum/airlock_maker/New(atom/target_loc)
 	linked = new(target_loc)
 	linked.maker = src
-	linked.anchored = FALSE
+	linked.set_anchored(FALSE)
 	access_used = list()
 
 	interact()
@@ -45,8 +45,9 @@
 	var/list/leftcolumn = list()
 	var/list/rightcolumn = list()
 	leftcolumn += "<u><b>Required Access</b></u>"
-	for(var/access in get_all_accesses())
-		leftcolumn += linkpretty("access=[access]",get_access_desc(access),access in access_used)
+	var/list/all_station_access = SSid_access.get_region_access_list(list(REGION_ALL_STATION))
+	for(var/access in all_station_access)
+		leftcolumn += linkpretty("access=[access]",SSid_access.get_access_desc(access),access in access_used)
 	leftcolumn += "Require all listed accesses: [linkpretty("reqall",null,require_all)]"
 
 	rightcolumn += "<u><b>Paintjob</b></u>"
@@ -70,7 +71,7 @@
 	dat += "</table><hr><a href='?src=[REF(src)];done'>Finalize Airlock Construction</a> | <a href='?src=[REF(src)];cancel'>Cancel and Destroy Airlock</a>"
 	usr << browse(dat,"window=airlockmaker")
 
-/datum/airlock_maker/Topic(var/href,var/list/href_list)
+/datum/airlock_maker/Topic(href,list/href_list)
 	if(!usr)
 		return
 	if(!src || !linked || !linked.loc)

@@ -1,9 +1,21 @@
-import { Fragment } from 'inferno';
 import { useBackend } from '../backend';
 import { Box, Button, Collapsible, Grid, LabeledList, NoticeBox, NumberInput, Section } from '../components';
+import { Window } from '../layouts';
 
-export const NaniteChamberControl = props => {
-  const { act, data } = useBackend(props);
+export const NaniteChamberControl = (props, context) => {
+  return (
+    <Window
+      width={380}
+      height={570}>
+      <Window.Content scrollable>
+        <NaniteChamberControlContent />
+      </Window.Content>
+    </Window>
+  );
+};
+
+export const NaniteChamberControlContent = (props, context) => {
+  const { act, data } = useBackend(context);
   const {
     status_msg,
     locked,
@@ -37,7 +49,7 @@ export const NaniteChamberControl = props => {
           onClick={() => act('toggle_lock')} />
       )}>
       {!has_nanites ? (
-        <Fragment>
+        <>
           <Box
             bold
             color="bad"
@@ -56,9 +68,9 @@ export const NaniteChamberControl = props => {
             fontSize="30px"
             lineHeight="50px"
             onClick={() => act('nanite_injection')} />
-        </Fragment>
+        </>
       ) : (
-        <Fragment>
+        <>
           <Section
             title="Status"
             level={2}
@@ -244,10 +256,9 @@ export const NaniteChamberControl = props => {
                               title="Rules"
                               level={2}>
                               {rules.map(rule => (
-                                <Fragment key={rule.display}>
+                                <Box key={rule.display}>
                                   {rule.display}
-                                  <br />
-                                </Fragment>
+                                </Box>
                               ))}
                             </Section>
                           </Grid.Column>
@@ -259,7 +270,7 @@ export const NaniteChamberControl = props => {
               );
             })}
           </Section>
-        </Fragment>
+        </>
       )}
     </Section>
   );

@@ -21,7 +21,7 @@
 	name = "Assault Pod Targeting Device"
 	icon = 'icons/obj/device.dmi'
 	icon_state = "gangtool-red"
-	item_state = "radio"
+	inhand_icon_state = "radio"
 	lefthand_file = 'icons/mob/inhands/misc/devices_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/misc/devices_righthand.dmi'
 	desc = "Used to select a landing zone for assault pods."
@@ -48,6 +48,7 @@
 	var/turf/T = pick(turfs)
 	var/obj/docking_port/stationary/landing_zone = new /obj/docking_port/stationary(T)
 	landing_zone.id = "assault_pod([REF(src)])"
+	landing_zone.port_destinations = "assault_pod([REF(src)])"
 	landing_zone.name = "Landing Zone"
 	landing_zone.dwidth = dwidth
 	landing_zone.dheight = dheight

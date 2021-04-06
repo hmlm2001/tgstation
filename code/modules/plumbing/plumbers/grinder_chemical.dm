@@ -3,15 +3,15 @@
 	desc = "chemical grinder."
 	icon_state = "grinder_chemical"
 	layer = ABOVE_ALL_MOB_LAYER
+
 	reagent_flags = TRANSPARENT | DRAINABLE
-	rcd_cost = 30
-	rcd_delay = 30
 	buffer = 400
+
 	var/eat_dir = SOUTH
 
-/obj/machinery/plumbing/grinder_chemical/Initialize(mapload, bolt)
+/obj/machinery/plumbing/grinder_chemical/Initialize(mapload, bolt, layer)
 	. = ..()
-	AddComponent(/datum/component/plumbing/simple_supply, bolt)
+	AddComponent(/datum/component/plumbing/simple_supply, bolt, layer)
 
 /obj/machinery/plumbing/grinder_chemical/can_be_rotated(mob/user, rotation_type)
 	if(anchored)

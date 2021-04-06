@@ -14,20 +14,22 @@
 	use_power = IDLE_POWER_USE
 	idle_power_usage = 10
 	active_power_usage = 100
-	armor = list("melee" = 25, "bullet" = 10, "laser" = 10, "energy" = 0, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 50, "acid" = 70)
+	armor = list(MELEE = 25, BULLET = 10, LASER = 10, ENERGY = 0, BOMB = 0, BIO = 0, RAD = 0, FIRE = 50, ACID = 70)
 	var/obj/item/stored
 
 /obj/machinery/blackbox_recorder/Initialize()
 	. = ..()
 	stored = new /obj/item/blackbox(src)
 
-/obj/machinery/blackbox_recorder/attack_hand(mob/living/user)
+/obj/machinery/blackbox_recorder/attack_hand(mob/living/user, list/modifiers)
 	. = ..()
 	if(stored)
-		user.put_in_hands(stored)
+		stored.forceMove(drop_location())
+		if(Adjacent(user))
+			user.put_in_hands(stored)
 		stored = null
 		to_chat(user, "<span class='notice'>You remove the blackbox from [src]. The tapes stop spinning.</span>")
-		update_icon()
+		update_appearance()
 		return
 	else
 		to_chat(user, "<span class='warning'>It seems that the blackbox is missing...</span>")
@@ -42,7 +44,7 @@
 		"<span class='notice'>You press the device into [src], and it clicks into place. The tapes begin spinning again.</span>")
 		playsound(src, 'sound/machines/click.ogg', 50, TRUE)
 		stored = I
-		update_icon()
+		update_appearance()
 		return
 	return ..()
 
@@ -52,15 +54,12 @@
 		new /obj/effect/decal/cleanable/oil(loc)
 	return ..()
 
-/obj/machinery/blackbox_recorder/update_icon()
-	. = ..()
-	if(!stored)
-		icon_state = "blackbox_b"
-	else
-		icon_state = "blackbox"
+/obj/machinery/blackbox_recorder/update_icon_state()
+	icon_state = "blackbox[stored ? null : "_b"]"
+	return ..()
 
 /obj/item/blackbox
-	name = "the blackbox"
+	name = "\proper the blackbox"
 	desc = "A strange relic, capable of recording data on extradimensional vertices. It lives inside the blackbox recorder for safe keeping."
 	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "blackcube"

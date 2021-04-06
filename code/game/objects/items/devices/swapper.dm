@@ -3,7 +3,7 @@
 	desc = "An experimental device that is able to swap the locations of two entities by switching their particles' spin values. Must be linked to another device to function."
 	icon = 'icons/obj/device.dmi'
 	icon_state = "swapper"
-	item_state = "electronic"
+	inhand_icon_state = "electronic"
 	w_class = WEIGHT_CLASS_SMALL
 	item_flags = NOBLUDGEON
 	lefthand_file = 'icons/mob/inhands/misc/devices_lefthand.dmi'
@@ -16,15 +16,13 @@
 /obj/item/swapper/Destroy()
 	if(linked_swapper)
 		linked_swapper.linked_swapper = null //*inception music*
-		linked_swapper.update_icon()
+		linked_swapper.update_appearance()
 		linked_swapper = null
 	return ..()
 
 /obj/item/swapper/update_icon_state()
-	if(linked_swapper)
-		icon_state = "swapper-linked"
-	else
-		icon_state = "swapper"
+	icon_state = "swapper[linked_swapper ? "-linked" : null]"
+	return ..()
 
 /obj/item/swapper/attackby(obj/item/I, mob/user, params)
 	if(istype(I, /obj/item/swapper))
@@ -38,8 +36,8 @@
 		to_chat(user, "<span class='notice'>You establish a quantum link between the two devices.</span>")
 		linked_swapper = other_swapper
 		other_swapper.linked_swapper = src
-		update_icon()
-		linked_swapper.update_icon()
+		update_appearance()
+		linked_swapper.update_appearance()
 	else
 		return ..()
 
@@ -69,14 +67,14 @@
 		. += "<span class='notice'><b>Not Linked.</b> Use on another quantum spin inverter to establish a quantum link.</span>"
 
 /obj/item/swapper/AltClick(mob/living/user)
-	if(!istype(user) || !user.canUseTopic(src, BE_CLOSE, ismonkey(user)))
+	if(!user.canUseTopic(src, BE_CLOSE, NO_DEXTERITY, FALSE, !iscyborg(user)))
 		return
 	to_chat(user, "<span class='notice'>You break the current quantum link.</span>")
 	if(!QDELETED(linked_swapper))
 		linked_swapper.linked_swapper = null
-		linked_swapper.update_icon()
+		linked_swapper.update_appearance()
 		linked_swapper = null
-	update_icon()
+	update_appearance()
 
 //Gets the topmost teleportable container
 /obj/item/swapper/proc/get_teleportable_container()
